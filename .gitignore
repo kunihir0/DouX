@@ -2,3 +2,5 @@
 .vscode/
 packages/
 .DS_Store
+.kilocodemodes
+.kilocode
