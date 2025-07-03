@@ -5,8 +5,7 @@
 - [Getting Started](#getting-started)
 - [Development Environment Setup](#development-environment-setup)
 - [Git Workflow and Branching Strategy](#git-workflow-and-branching-strategy)
-- [Code Standards and Guidelines](#code-standards-and-guidelines)
-- [Testing Requirements](#testing-requirements)
+- [Code Standards](#code-standards)
 - [Documentation Standards](#documentation-standards)
 - [Pull Request Process](#pull-request-process)
 - [Code Review Guidelines](#code-review-guidelines)
@@ -20,8 +19,8 @@ Thank you for your interest in contributing to BHTikTok++! This document outline
 
 ### Prerequisites
 
-- **macOS** with Xcode Command Line Tools installed
-- **Theos** development framework (`brew install theos`)
+- **macOS** with **full Xcode** installed (not just Command Line Tools)
+- **Theos** development framework (installed via official script)
 - **Git** with proper SSH key configuration
 - **Jailbroken iOS device** or **iOS Simulator** for testing
 - Understanding of **Objective-C** and **Logos syntax**
@@ -37,19 +36,37 @@ Thank you for your interest in contributing to BHTikTok++! This document outline
 
 ## 🛠️ Development Environment Setup
 
-### 1. Theos Installation
+### 1. Prerequisites
 
 ```bash
-# Install Theos via Homebrew
-brew install theos
+# Install full Xcode from App Store (required - Command Line Tools alone are insufficient)
+# After installation, accept the license:
+sudo xcodebuild -license accept
 
-# Configure environment variables
-echo 'export THEOS=/opt/theos' >> ~/.zshrc
-echo 'export PATH="/opt/theos/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+# Verify Xcode installation
+xcode-select --print-path
 ```
 
-### 2. Project Setup
+### 2. Theos Installation
+
+```bash
+# Install Theos using the official installation script
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+
+# The script will automatically:
+# - Install Theos to /opt/theos
+# - Set up environment variables
+# - Configure your shell profile
+
+# Verify installation
+echo $THEOS
+# Should output: /opt/theos
+
+# Restart your terminal or source your shell profile
+source ~/.zshrc  # or ~/.bash_profile for bash users
+```
+
+### 3. Project Setup
 
 ```bash
 # Clone your fork
@@ -63,7 +80,7 @@ git remote add upstream git@github.com:ORIGINAL_OWNER/BHTikTokPlusPlusPlus.git
 make clean && make
 ```
 
-### 3. Device Configuration
+### 4. Device Configuration
 
 ```bash
 # Configure your test device
@@ -132,7 +149,6 @@ gitGraph
 - **Source**: Always branch from `dev`
 - **Scope**: Single feature or related changes
 - **Lifetime**: Short-lived, deleted after merge
-- **Testing**: Unit tests and basic functionality validation
 
 ### Workflow Process
 
@@ -179,11 +195,9 @@ This PR implements a comprehensive download queue management system...
 - [ ] Progress tracking improvements
 - [ ] Speed throttling controls
 
-## Testing
-- [x] Unit tests pass
+## Device Testing
 - [x] Manual testing on iOS 16.5
 - [x] Compatibility testing with TikTok v28.x
-- [ ] Performance testing with large queues
 
 ## Breaking Changes
 None
@@ -235,206 +249,28 @@ None"
 git push upstream main --tags
 ```
 
-## 📏 Code Standards and Guidelines
+## 📏 Code Standards
 
-### Objective-C Style Guide
+All code must follow our comprehensive coding style guide. Please review the following document before contributing:
 
-#### 1. File Organization
+**📖 [Coding Style Guide](CODING_STYLE.md)**
 
-```objective-c
-// Header file structure
-#import <SystemFramework/SystemFramework.h>
-#import "ProjectHeaders.h"
+This includes:
+- **Objective-C Style Guidelines**: Naming conventions, file organization, memory management
+- **Logos Hook Best Practices**: Safe hooking practices, organization, and performance considerations
+- **Error Handling Standards**: Defensive programming and graceful error recovery
+- **Code Documentation**: Comment standards and documentation requirements
 
-// Constants
-extern NSString * const BHConstantName;
+### Quick Style Checklist
 
-// Protocol definitions
-@protocol BHProtocolName <NSObject>
-// Protocol methods
-@end
+- [ ] All classes use `BH` prefix
+- [ ] Methods follow camelCase naming
+- [ ] Proper memory management (strong/weak attributes)
+- [ ] Hooks include feature flag checks
+- [ ] Error handling with proper NSError usage
+- [ ] Code is well-documented with comments
+- [ ] Follows formatting guidelines (4 spaces, 120 char limit)
 
-// Class interface
-@interface BHClassName : NSObject
-// Public properties and methods
-@end
-```
-
-#### 2. Naming Conventions
-
-```objective-c
-// Classes: PascalCase with BH prefix
-@interface BHDownloadManager : NSObject
-
-// Methods: camelCase with descriptive names
-- (void)downloadFileWithURL:(NSURL *)url completion:(void(^)(BOOL success))completion;
-
-// Properties: camelCase
-@property (nonatomic, strong) NSString *downloadDirectory;
-
-// Constants: PascalCase with prefix
-extern NSString * const BHDownloadDidCompleteNotification;
-
-// Enum: PascalCase
-typedef NS_ENUM(NSInteger, BHDownloadStatus) {
-    BHDownloadStatusPending,
-    BHDownloadStatusInProgress,
-    BHDownloadStatusCompleted,
-    BHDownloadStatusFailed
-};
-```
-
-#### 3. Memory Management
-
-```objective-c
-// Use strong/weak appropriately
-@property (nonatomic, strong) UIView *containerView;
-@property (nonatomic, weak) id<BHDelegate> delegate;
-
-// Avoid retain cycles in blocks
-__weak typeof(self) weakSelf = self;
-[self.downloadManager downloadWithCompletion:^(BOOL success) {
-    __strong typeof(weakSelf) strongSelf = weakSelf;
-    if (!strongSelf) return;
-    [strongSelf handleDownloadCompletion:success];
-}];
-```
-
-### Logos Hook Guidelines
-
-#### 1. Hook Organization
-
-```objective-c
-// Group related hooks together
-#pragma mark - Download System Hooks
-
-%hook AWEFeedViewTemplateCell
-- (void)configWithModel:(id)model {
-    %orig;
-    if ([BHIManager downloadButton]) {
-        [self addDownloadButton];
-    }
-}
-%end
-
-#pragma mark - Region Spoofing Hooks
-
-%hook CTCarrier
-- (NSString *)mobileCountryCode {
-    if ([BHIManager regionChangingEnabled]) {
-        NSDictionary *selectedRegion = [BHIManager selectedRegion];
-        return selectedRegion[@"mcc"];
-    }
-    return %orig;
-}
-%end
-```
-
-#### 2. Safe Hook Practices
-
-```objective-c
-// Always check conditions before modifying behavior
-%hook SomeClass
-- (void)someMethod {
-    if (![BHIManager featureEnabled]) {
-        return %orig;
-    }
-    
-    // Feature implementation
-    // Always provide fallback to original behavior
-    %orig;
-}
-%end
-
-// Use %new sparingly and document thoroughly
-%new - (void)customMethod {
-    // Custom implementation
-}
-```
-
-### Error Handling
-
-```objective-c
-// Always handle errors gracefully
-- (BOOL)downloadFileWithURL:(NSURL *)url error:(NSError **)error {
-    if (!url) {
-        if (error) {
-            *error = [NSError errorWithDomain:BHErrorDomain 
-                                         code:BHErrorInvalidURL 
-                                     userInfo:@{NSLocalizedDescriptionKey: @"Invalid URL provided"}];
-        }
-        return NO;
-    }
-    
-    // Implementation
-    return YES;
-}
-```
-
-## 🧪 Testing Requirements
-
-### 1. Unit Testing
-
-```objective-c
-// Example test structure
-#import <XCTest/XCTest.h>
-#import "BHDownloadManager.h"
-
-@interface BHDownloadManagerTests : XCTestCase
-@property (nonatomic, strong) BHDownloadManager *downloadManager;
-@end
-
-@implementation BHDownloadManagerTests
-
-- (void)setUp {
-    [super setUp];
-    self.downloadManager = [[BHDownloadManager alloc] init];
-}
-
-- (void)testDownloadWithValidURL {
-    NSURL *testURL = [NSURL URLWithString:@"https://example.com/test.mp4"];
-    XCTestExpectation *expectation = [self expectationWithDescription:@"Download completion"];
-    
-    [self.downloadManager downloadFileWithURL:testURL completion:^(BOOL success) {
-        XCTAssertTrue(success);
-        [expectation fulfill];
-    }];
-    
-    [self waitForExpectationsWithTimeout:10.0 handler:nil];
-}
-
-@end
-```
-
-### 2. Integration Testing
-
-All PRs must include:
-
-- **Device Testing**: Test on physical iOS device
-- **Compatibility Testing**: Test with latest TikTok version
-- **Feature Testing**: Verify all related features work
-- **Regression Testing**: Ensure no existing features break
-
-### 3. Performance Testing
-
-```objective-c
-// Example performance test
-- (void)testDownloadPerformance {
-    [self measureBlock:^{
-        // Performance critical code
-        [self.downloadManager processLargeDownloadQueue];
-    }];
-}
-```
-
-### 4. Manual Testing Checklist
-
-- [ ] Fresh installation works correctly
-- [ ] Settings persist across app restarts
-- [ ] All advertised features function as expected
-- [ ] No memory leaks or crashes
-- [ ] Performance is acceptable
-- [ ] UI responds correctly to user interactions
 
 ## 📚 Documentation Standards
 
@@ -499,8 +335,7 @@ BHDownloadQueue *queue = [[BHDownloadQueue alloc] init];
 
 ### 1. Pre-submission Checklist
 
-- [ ] Code follows style guidelines
-- [ ] All tests pass
+- [ ] Code follows [style guidelines](CODING_STYLE.md)
 - [ ] Documentation is updated
 - [ ] Commit messages follow conventional commits
 - [ ] No merge conflicts with target branch
@@ -524,11 +359,6 @@ Brief description of changes and motivation.
 - Technical implementation details
 - Any architectural decisions
 
-## Testing
-- [ ] Unit tests added/updated
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-- [ ] Performance testing (if applicable)
 
 ## Screenshots/Videos
 Include visual evidence of UI changes.
@@ -546,7 +376,7 @@ References #456
 1. **Automated Checks**: CI/CD pipeline runs automatically
 2. **Peer Review**: At least one team member reviews
 3. **Maintainer Review**: Core maintainer approves
-4. **Testing**: QA testing on staging branch
+4. **Validation**: QA validation on staging branch
 5. **Merge**: Squash and merge to target branch
 
 ## 👀 Code Review Guidelines
@@ -566,7 +396,6 @@ References #456
 - [ ] **Style**: Follows project coding standards?
 - [ ] **Performance**: No obvious performance issues?
 - [ ] **Security**: No security vulnerabilities introduced?
-- [ ] **Testing**: Adequate test coverage?
 - [ ] **Documentation**: Is code self-documenting or well-commented?
 
 #### 2. Feedback Guidelines
