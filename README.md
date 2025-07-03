@@ -127,18 +127,27 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 3. Install the package
 4. Restart SpringBoard if prompted
 
-### Manual Installation
+### Building from Source
+For this method, you will need a development environment with Theos set up.
 
-1. Download the latest `.deb` file from releases
-2. Install using your preferred method:
+1. **Clone the repository:**
    ```bash
-   # Via SSH
-   dpkg -i BHTikTok++.deb
-   
-   # Via Filza
-   # Navigate to the .deb file and tap to install
+   git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+   cd BHTikTokPlusPlusPlus
    ```
-3. Restart TikTok application
+
+2. **Configure your device:**
+   Make sure your device's IP address is set in your environment or `Makefile`.
+   ```bash
+   export THEOS_DEVICE_IP=YOUR_DEVICE_IP
+   ```
+
+3. **Build and install the tweak:**
+   ```bash
+   make install
+   ```
+
+4. **Restart the TikTok application.**
 
 ## ⚙️ Configuration
 
@@ -178,21 +187,34 @@ On first installation, the following features are enabled by default:
 - **Device** or **Simulator** for testing
 
 ### Build Process
+This project uses **Theos** for its build system. The `Makefile` contains all the necessary targets for compiling, packaging, and installing the tweak.
 
-```bash
-# Clone the repository
-git clone https://github.com/user/BHTikTokPlusPlusPlus.git
-cd BHTikTokPlusPlusPlus
+#### Common Commands
+Here are some of the most frequently used `make` commands:
 
-# Clean and build
-make clean && make
+| Command | Description |
+| :--- | :--- |
+| `make` | Compile source files that have changed since the last build. |
+| `make clean` | Remove all compiled files from the build directory. Use this if you encounter strange build errors. |
+| `make package` | Build the tweak and create a `.deb` package in the `./packages/` directory. |
+| `make install` | Compile and install the tweak directly to your connected device (requires `THEOS_DEVICE_IP` to be set). |
+| `make do` | A convenient shortcut for `make package install`. This is the recommended command for most development cycles. |
 
-# Install to device
-make install
+#### Advanced Commands
 
-# Create package
-make package
-```
+- **Release Package**: To create an optimized release package, use the `FINALPACKAGE=1` flag.
+  ```bash
+  make package FINALPACKAGE=1
+  ```
+- **Debug Symbols**: To create a release package with debug symbols included, use `STRIP=0`.
+  ```bash
+  make package FINALPACKAGE=1 STRIP=0
+  ```
+- **Verbose Output**: To get more detailed build information for troubleshooting, use `messages=yes`.
+  ```bash
+  make messages=yes
+  ```
+For a complete list of commands, refer to the official [Theos Documentation](https://theos.dev/docs/commands).
 
 ### Development Setup
 
