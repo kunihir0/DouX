@@ -224,8 +224,11 @@ The tweak implements comprehensive region spoofing by hooking multiple carrier a
 - `CTCarrier` - Mobile carrier information
 - `TTKStoreRegionService` - App Store region
 - `TIKTOKRegionManager` - TikTok region management
-- `TTInstallIDManager` - Installation region tracking
+- `TTKPassportAppStoreRegionModel`
 - `ATSRegionCacheManager` - Region caching
+- `TTKStoreRegionModel`
+- `TTInstallIDManager` - Installation region tracking
+- `BDInstallGlobalConfig`
 
 ### 6. Security and Anti-Detection
 
@@ -254,12 +257,23 @@ The tweak includes comprehensive jailbreak detection bypass:
 - Mobile provision checks
 
 **Hooked Classes for Detection Bypass**:
+- `NSFileManager`
 - `BDADeviceHelper`
 - `UIDevice`
 - `TTInstallUtil`
 - `AppsFlyerUtils`
+- `PIPOIAPStoreManager`
+- `IESLiveDeviceInfo`
+- `PIPOStoreKitHelper`
+- `BDInstallNetworkUtility`
+- `TTAdSplashDeviceHelper`
 - `GULAppEnvironmentUtil`
 - `FBSDKAppEventsUtility`
+- `AWEAPMManager`
+- `NSBundle`
+- `AWESecurity`
+- `MSManagerOV`
+- `MSConfigOV`
 
 ### 7. Confirmation System
 

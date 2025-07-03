@@ -1,6 +1,6 @@
 # BHTikTok++
 
-An awesome tweak for TikTok!
+**BHTikTok++** is a powerful and feature-rich tweak for the TikTok application, designed to enhance your viewing and interaction experience. It offers a wide range of functionalities, from advanced media downloads and UI customization to privacy enhancements and developer tools.
 
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue.svg)](docs/)
 [![Platform](https://img.shields.io/badge/platform-iOS-lightgrey.svg)](https://developer.apple.com/ios/)

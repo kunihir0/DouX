@@ -75,6 +75,8 @@ The manager provides consistent access to boolean preferences through standardiz
 | [`autoPlay`](../../BHIManager.m#L23) | `auto_play` | Auto-advance to next video |
 | [`stopPlay`](../../BHIManager.m#L26) | `stop_play` | Disable video looping |
 
+[`transparentCommnet`](../../BHIManager.m#L32) | `transparent_commnet` | Make the comment section transparent |
+
 #### Content and Privacy Settings
 **Location**: [Lines 32-52](../../BHIManager.m#L32)
 

@@ -33,7 +33,7 @@
 + (NSNumber *)selectedLiveAction;
 + (BOOL)liveActionEnabled;
 + (BOOL)speedEnabled;
-+ (NSDictionary *)selectedSpeed;
++ (NSNumber *)selectedSpeed;
 + (BOOL)fakeChangesEnabled;
 + (BOOL)fakeVerified;
 + (BOOL)uploadHD;
