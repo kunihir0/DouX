@@ -264,6 +264,7 @@
 - (void)addHideElementButton;
 - (void)hideElementButtonHandler:(UIButton *)sender;
 - (void)addDownloadButton;
+- (void)addFlexButton;
 - (void) downloadButtonHandler:(UIButton *)sender;
 - (void)downloadVideo:(AWEAwemeBaseViewController *)rootVC;
 - (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC;

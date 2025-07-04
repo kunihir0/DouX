@@ -91,7 +91,7 @@
         case 6:
             return 2;
         case 7:
-            return 3; // developer section
+            return 4; // developer section
         default:
             return 0; // Fallback for unexpected section
     }
@@ -310,8 +310,8 @@
                                                    Key:@"padlock"];
             case 9:
                 return [self createSwitchCellWithTitle:@"Enable Flex"
-                                                Detail:@"Developers Only, DON'T touch it if you don't know what you are doing."
-                                                   Key:@"flex_enebaled"];
+                                                 Detail:@"Developers Only, DON'T touch it if you don't know what you are doing."
+                                                    Key:@"flex_enabled"];
             default:
                 break;
         }
@@ -405,12 +405,12 @@
                 return cell;
             }
                 break;
-            default:
-                break;
-        }
-    }
-    return [UITableViewCell new];
-}
+                            default:
+                                break;
+                        }
+                    }
+                    return [UITableViewCell new];
+                }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSLog(@"Selected row at index: %ld", (long)indexPath.section);

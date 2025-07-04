@@ -147,6 +147,21 @@ graph LR
 - [`downloadPhotos:`](../../Tweak.x#L1147) - Photo album downloads
 - [`downloadMusic:`](../../Tweak.x#L1170) - Audio extraction
 
+#### FLEX Button Integration
+**Location**: [Lines 1074-1077](../../Tweak.x#L1074)
+
+```objective-c
+- (void)configWithModel:(id)model {
+    %orig;
+    // ...
+    if ([BHIManager flexEnabled]) {
+        [self addFlexButton];
+    }
+}
+```
+
+**Purpose**: Adds a button to the feed cell to launch the FLEX explorer for debugging.
+
 #### UI Element Control
 **Location**: [Lines 1373-1410](../../Tweak.x#L1373)
 
