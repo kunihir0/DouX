@@ -9,6 +9,8 @@
 #import "CountryTable.h"
 #import "LiveActions.h"
 #import "PlaybackSpeed.h"
+#import "LLMSettingsViewController.h"
+#import "ConsoleViewController.h"
 
 @interface ViewController ()
 @property (nonatomic, strong) UITableView *staticTable;
@@ -46,7 +48,7 @@
 
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 8;
+    return 9;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -61,13 +63,14 @@
             return @"Other";
         case 4:
             return @"Region";
-            break;
         case 5:
             return @"Live Button Function";
         case 6:
             return @"Playback Speed";
         case 7:
             return @"Developer";
+        case 8:
+            return @"LLM";
         default:
             break;
     }
@@ -91,7 +94,9 @@
         case 6:
             return 2;
         case 7:
-            return 4; // developer section
+            return 5; // developer section
+        case 8:
+            return 1; // LLM section
         default:
             return 0; // Fallback for unexpected section
     }
@@ -404,13 +409,33 @@
                 cell.imageView.image = [UIImage systemImageNamed:@"mug.fill"];
                 return cell;
             }
+            case 3:
+                return [self createSwitchCellWithTitle:@"Enable FLEX"
+                                                Detail:@"Enable the FLEX debugging tool"
+                                                   Key:@"flex_enabled"];
+            case 4: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+                cell.textLabel.text = @"Console";
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                return cell;
+            }
+            default:
                 break;
-                            default:
-                                break;
-                        }
-                    }
-                    return [UITableViewCell new];
-                }
+        }
+    } else if (indexPath.section == 8) {
+        switch (indexPath.row) {
+            case 0: {
+                UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+                cell.textLabel.text = @"LLM Settings";
+                cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+                return cell;
+            }
+            default:
+                break;
+        }
+    }
+    return [UITableViewCell new];
+}
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     NSLog(@"Selected row at index: %ld", (long)indexPath.section);
@@ -448,6 +473,12 @@
         if ([[UIApplication sharedApplication] canOpenURL:url]) {
             [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
         }
+    } else if (indexPath.section == 7 && indexPath.row == 4) {
+        ConsoleViewController *consoleVC = [[ConsoleViewController alloc] init];
+        [self.navigationController pushViewController:consoleVC animated:YES];
+    } else if (indexPath.section == 8 && indexPath.row == 0) {
+        LLMSettingsViewController *llmSettingsVC = [[LLMSettingsViewController alloc] init];
+        [self.navigationController pushViewController:llmSettingsVC animated:YES];
     }
 }
 

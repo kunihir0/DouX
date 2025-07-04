@@ -1,4 +1,6 @@
 #import "TikTokHeaders.h"
+#import "BHLogger.h"
+#import <objc/runtime.h>
 
 NSArray *jailbreakPaths;
 
@@ -10,11 +12,14 @@ static void showConfirmation(void (^okHandler)(void)) {
 
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
+    [BHLogger log:@"[AppDelegate] application:didFinishLaunchingWithOptions:"];
     %orig;
     if ([BHIManager flexEnabled]) {
+        [BHLogger log:@"[FLEX] Flex is enabled, showing explorer."];
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
     }
     if (![[NSUserDefaults standardUserDefaults] objectForKey:@"BHTikTokFirstRun"]) {
+        [BHLogger log:@"First run, setting default values."];
         [[NSUserDefaults standardUserDefaults] setValue:@"BHTikTokFirstRun" forKey:@"BHTikTokFirstRun"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"hide_ads"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_button"];
@@ -906,24 +911,112 @@ static BOOL isAuthenticationShowed = FALSE;
     }
 }
 %end
-%hook AWECommentPanelCell // like/dislike comment confirmation
-- (void)onLikeAction:(id)arg1 {
-    if ([BHIManager likeCommentConfirmation]) {
-        showConfirmation(^(void) { %orig; });
-    } else {
-        return %orig;
-    }
-}
-- (void)onDislikeAction:(id)arg1 {
-    if ([BHIManager dislikeCommentConfirmation]) {
-        showConfirmation(^(void) { %orig; });
-    } else {
-        return %orig;
+
+
+%hook AWECommentPanelViewController
+- (void)didLongPressCell:(id)cell atIndexPath:(NSIndexPath *)indexPath onView:(id)view {
+    [BHLogger log:[NSString stringWithFormat:@"[AWECommentPanelViewController] didLongPressCell:atIndexPath:%@ onView:%@", indexPath, view]];
+    %orig;
+
+    if ([BHIManager llmEnabled]) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            UIViewController *presentedVC = self.presentedViewController;
+            if (presentedVC) {
+                NSString *viewHierarchy = [presentedVC.view performSelector:@selector(recursiveDescription)];
+                [BHLogger log:[NSString stringWithFormat:@"Presented VC View Hierarchy: %@", viewHierarchy]];
+            } else {
+                [BHLogger log:@"Presented VC is nil"];
+            }
+        });
     }
 }
 %end
 
-%hook AWEUserModel // follower, following Count fake  
+%hook AWECommentPanelCell
+- (void)layoutSubviews {
+    %orig;
+    if ([BHIManager llmEnabled]) {
+        // DO NOT REMOVE: Extensive logging for debugging purposes.
+        [BHLogger log:[NSString stringWithFormat:@"[AWECommentPanelCell] View Hierarchy: %@", [self performSelector:@selector(recursiveDescription)]]];
+
+        unsigned int count;
+        objc_property_t *properties = class_copyPropertyList([self class], &count);
+        for (unsigned int i = 0; i < count; i++) {
+            const char *propName = property_getName(properties[i]);
+            NSString *propertyName = [NSString stringWithUTF8String:propName];
+            [BHLogger log:[NSString stringWithFormat:@"[AWECommentPanelCell] Property: %@", propertyName]];
+        }
+        free(properties);
+
+        Method *methods = class_copyMethodList([self class], &count);
+        for (unsigned int i = 0; i < count; i++) {
+            SEL selector = method_getName(methods[i]);
+            NSString *methodName = NSStringFromSelector(selector);
+            [BHLogger log:[NSString stringWithFormat:@"[AWECommentPanelCell] Method: %@", methodName]];
+        }
+        free(methods);
+
+        [self addGPTButton];
+    }
+}
+
+%new - (void)addGPTButton {
+    UIButton *gptButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [gptButton setTag:1001];
+    [gptButton setTranslatesAutoresizingMaskIntoConstraints:false];
+    [gptButton addTarget:self action:@selector(gptButtonHandler:) forControlEvents:UIControlEventTouchUpInside];
+    [gptButton setImage:[UIImage systemImageNamed:@"brain"] forState:UIControlStateNormal];
+    if (![self viewWithTag:1001]) {
+        [gptButton setTintColor:[UIColor whiteColor]];
+        [self addSubview:gptButton];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [gptButton.centerYAnchor constraintEqualToAnchor:self.contentView.centerYAnchor],
+            [gptButton.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-80],
+            [gptButton.widthAnchor constraintEqualToConstant:24],
+            [gptButton.heightAnchor constraintEqualToConstant:24],
+        ]];
+    }
+}
+
+%new - (void)gptButtonHandler:(UIButton *)sender {
+    [BHLogger log:@"[AWECommentPanelCell] gptButtonHandler tapped."];
+    [self generateGPT:self.model];
+}
+
+%new - (void)generateGPT:(AWECommentModel *)comment {
+    [BHLogger log:[NSString stringWithFormat:@"[AWECommentPanelCell] generateGPT with comment: %@", comment]];
+    [BHLogger log:[NSString stringWithFormat:@"Username: %@", comment.user.nickname]];
+    [BHLogger log:[NSString stringWithFormat:@"Comment: %@", comment.content]];
+}
+%end
+
+%hook TikTokCommentImpl_CommentLongPressPanelInternalShareCell
+- (void)layoutSubviews {
+    %orig;
+    // DO NOT REMOVE: Extensive logging for debugging purposes.
+    [BHLogger log:[NSString stringWithFormat:@"[TikTokCommentImpl_CommentLongPressPanelInternalShareCell] View Hierarchy: %@", [self performSelector:@selector(recursiveDescription)]]];
+
+    unsigned int count;
+    objc_property_t *properties = class_copyPropertyList([self class], &count);
+    for (unsigned int i = 0; i < count; i++) {
+        const char *propName = property_getName(properties[i]);
+        NSString *propertyName = [NSString stringWithUTF8String:propName];
+        [BHLogger log:[NSString stringWithFormat:@"[TikTokCommentImpl_CommentLongPressPanelInternalShareCell] Property: %@", propertyName]];
+    }
+    free(properties);
+
+    Method *methods = class_copyMethodList([self class], &count);
+    for (unsigned int i = 0; i < count; i++) {
+        SEL selector = method_getName(methods[i]);
+        NSString *methodName = NSStringFromSelector(selector);
+        [BHLogger log:[NSString stringWithFormat:@"[TikTokCommentImpl_CommentLongPressPanelInternalShareCell] Method: %@", methodName]];
+    }
+    free(methods);
+}
+%end
+
+%hook AWEUserModel // follower, following Count fake
 - (NSNumber *)followerCount {
     if ([BHIManager fakeChangesEnabled]) {
         NSString *fakeCountString = [[NSUserDefaults standardUserDefaults] stringForKey:@"follower_count"];
@@ -1067,9 +1160,6 @@ static BOOL isAuthenticationShowed = FALSE;
     self.elementsHidden = false;
     if ([BHIManager downloadButton]){
         [self addDownloadButton];
-    }
-    if ([BHIManager hideElementButton]) {
-        [self addHideElementButton];
     }
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
@@ -1601,45 +1691,45 @@ static BOOL isAuthenticationShowed = FALSE;
     if ([rootVC.interactionController isKindOfClass:%c(TTKFeedInteractionLegacyMainContainerElement)]) {
 
      UIAction *action1 = [UIAction actionWithTitle:@"Download Video"
-                                            image:[UIImage systemImageNamed:@"film"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"film"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadVideo:rootVC];
     }];
     UIAction *action0 = [UIAction actionWithTitle:@"Download HD Video"
-                                            image:[UIImage systemImageNamed:@"film"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadHDVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"film"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadHDVideo:rootVC];
     }];
     UIAction *action2 = [UIAction actionWithTitle:@"Download Music"
-                                            image:[UIImage systemImageNamed:@"music.note"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"music.note"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadMusic:rootVC];
     }];
     UIAction *action3 = [UIAction actionWithTitle:@"Copy Music link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyMusic:rootVC];
     }];
     UIAction *action4 = [UIAction actionWithTitle:@"Copy Video link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyVideo:rootVC];
     }];
     UIAction *action5 = [UIAction actionWithTitle:@"Copy Decription"
-                                            image:[UIImage systemImageNamed:@"note.text"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyDecription:rootVC];
+                                             image:[UIImage systemImageNamed:@"note.text"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyDecription:rootVC];
     }];
     UIMenu *downloadMenu = [UIMenu menuWithTitle:@"Downloads Menu"
-                                        children:@[action1, action0,action2]];
+                                         children:@[action1, action0,action2]];
     UIMenu *copyMenu = [UIMenu menuWithTitle:@"Copy Menu"
-                                        children:@[action3, action4, action5]];
+                                         children:@[action3, action4, action5]];
     UIMenu *mainMenu = [UIMenu menuWithTitle:@"" children:@[downloadMenu, copyMenu]];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
@@ -1901,13 +1991,7 @@ static BOOL isAuthenticationShowed = FALSE;
         @"/usr/lib/system/introspectionNSZombieEnabled",
         @"/usr/lib/dyld",
         @"/jb/amfid_payload.dylib", @"/jb/libjailbreak.dylib",
-        @"/jb/jailbreakd.plist", @"/jb/offsets.plist",
-        @"/jb/lzma",
-        @"/hmd_tmp_file",
-        @"/etc/ssh/sshd_config", @"/etc/apt/undecimus/undecimus.list",
-        @"/etc/apt/sources.list.d/sileo.sources", @"/etc/apt/sources.list.d/electra.list",
-        @"/etc/apt", @"/etc/ssl/certs", @"/etc/ssl/cert.pem",
-        @"/bin/sh", @"/bin/bash",
+        @"/jb/jailbreakd.plist", @"/jb/offsets.plist"
     ];
     %init;
 }

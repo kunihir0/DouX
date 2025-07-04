@@ -41,6 +41,11 @@
 + (BOOL)extendedComment;
 + (BOOL)appLock;
 + (BOOL)flexEnabled;
++ (BOOL)llmEnabled;
++ (NSString *)ollamaURL;
++ (NSString *)selectedModel;
++ (NSString *)systemPrompt;
++ (BOOL)streamingResponses;
 + (void)showSaveVC:(id)item;
 + (void)cleanCache;
 + (BOOL)isEmpty:(NSURL *)url;

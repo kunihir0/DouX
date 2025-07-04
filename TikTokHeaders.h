@@ -31,6 +31,9 @@
 - (void)image:(UIImage *)image didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo;
 @end
 
+@interface AWECommentPanelViewController: UIViewController
+@end
+
 @interface TTTAttributedLabel: UILabel 
 - (void)handleLongPress:(UILongPressGestureRecognizer *)sender;
 - (void)addHandleLongPress;
@@ -65,11 +68,22 @@
 @interface UIView (RCTViewUnmounting)
 @property(retain, nonatomic) UIViewController *yy_viewController;
 @end
-@interface AWECommentPanelCell: UITableView
+@class AWEUserModel;
+@interface AWECommentModel: NSObject
+@property(retain, nonatomic) AWEUserModel *user;
+@property(retain, nonatomic) NSString *content;
+@end
+
+@interface AWECommentPanelCell: UITableViewCell
 - (void)onLikeAction:(id)arg1;
 - (void)onDislikeAction:(id)arg1;
+- (void)addHandleLongPress;
+- (void)addGPTButton;
+- (void)gptButtonHandler:(UIButton *)sender;
+- (void)generateGPT:(AWECommentModel *)comment;
+@property(retain, nonatomic) AWECommentModel *model;
 @end
-@interface TikTokFeedTabControl: UIView
+@interface TikTokCommentImpl_CommentLongPressPanelInternalShareCell: UICollectionViewCell
 @end
 
 @interface AWEFeedVideoButton: UIButton
@@ -236,7 +250,7 @@
 }
 @end
 
-@interface AWEFeedCellViewController: AWEAwemeBaseViewController;
+@interface AWEFeedCellViewController: AWEAwemeBaseViewController
 @property (nonatomic, strong, readwrite) AWEAwemeModel *model;
 - (NSInteger)indexPath;
 @end

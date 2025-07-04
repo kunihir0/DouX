@@ -119,6 +119,21 @@
 + (BOOL)flexEnabled {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enabled"];
 }
++ (BOOL)llmEnabled {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"llm_enabled"];
+}
++ (NSString *)ollamaURL {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:@"ollama_url"];
+}
++ (NSString *)selectedModel {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:@"selected_model"];
+}
++ (NSString *)systemPrompt {
+    return [[NSUserDefaults standardUserDefaults] stringForKey:@"system_prompt"];
+}
++ (BOOL)streamingResponses {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"streaming_responses"];
+}
 + (void)cleanCache {
     NSArray <NSURL *> *DocumentFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject] includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
     

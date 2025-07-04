@@ -8,6 +8,7 @@
 #import <UIKit/UIKit.h>
 #import "TikTokHeaders.h"
 @interface ViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate>
+- (UITableViewCell *)createSwitchCellWithTitle:(NSString *)title Detail:(NSString *)detail Key:(NSString *)key;
 
 
 @end
