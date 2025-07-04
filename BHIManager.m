@@ -116,6 +116,9 @@
 + (BOOL)appLock {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"padlock"];
 }
++ (BOOL)flexEnabled {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enabled"];
+}
 + (void)cleanCache {
     NSArray <NSURL *> *DocumentFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject] includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
     

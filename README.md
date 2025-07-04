@@ -119,6 +119,7 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 - Jailbroken iOS device (iOS 12.0+)
 - Cydia, Sileo, or compatible package manager
 - MobileSubstrate installed
+- [FLEXing](https://alias20.gitlab.io/apt/) and [libflex](https://alias20.gitlab.io/apt/) installed from the provided repository.
 
 ### From Package Manager
 

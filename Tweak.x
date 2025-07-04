@@ -11,7 +11,7 @@ static void showConfirmation(void (^okHandler)(void)) {
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
     %orig;
-    if ([[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enebaled"]) {
+    if ([BHIManager flexEnabled]) {
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
     }
     if (![[NSUserDefaults standardUserDefaults] objectForKey:@"BHTikTokFirstRun"]) {
@@ -1071,6 +1071,12 @@ static BOOL isAuthenticationShowed = FALSE;
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
     }
+    if ([BHIManager hideElementButton]) {
+        [self addHideElementButton];
+    }
+    if ([BHIManager flexEnabled]) {
+        [self addFlexButton];
+    }
 }
 - (void)configureWithModel:(id)model {
     %orig;
@@ -1080,6 +1086,9 @@ static BOOL isAuthenticationShowed = FALSE;
     }
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
+    }
+    if ([BHIManager flexEnabled]) {
+        [self addFlexButton];
     }
 }
 %new - (void)addDownloadButton {
@@ -1212,45 +1221,45 @@ static BOOL isAuthenticationShowed = FALSE;
     if ([rootVC isKindOfClass:%c(AWEFeedCellViewController)]) {
 
          UIAction *action1 = [UIAction actionWithTitle:@"Download Video"
-                                            image:[UIImage systemImageNamed:@"film"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"film"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadVideo:rootVC];
     }];
         UIAction *action0 = [UIAction actionWithTitle:@"Download HD Video"
-                                            image:[UIImage systemImageNamed:@"film"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadHDVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"film"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadHDVideo:rootVC];
     }];
     UIAction *action2 = [UIAction actionWithTitle:@"Download Music"
-                                            image:[UIImage systemImageNamed:@"music.note"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"music.note"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadMusic:rootVC];
     }];
     UIAction *action3 = [UIAction actionWithTitle:@"Copy Music link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyMusic:rootVC];
     }];
     UIAction *action4 = [UIAction actionWithTitle:@"Copy Video link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyVideo:rootVC];
     }];
     UIAction *action5 = [UIAction actionWithTitle:@"Copy Decription"
-                                            image:[UIImage systemImageNamed:@"note.text"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyDecription:rootVC];
+                                             image:[UIImage systemImageNamed:@"note.text"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyDecription:rootVC];
     }];
     UIMenu *downloadMenu = [UIMenu menuWithTitle:@"Downloads Menu"
-                                        children:@[action1, action0,action2]];
+                                         children:@[action1, action0,action2]];
     UIMenu *copyMenu = [UIMenu menuWithTitle:@"Copy Menu"
-                                        children:@[action3, action4, action5]];
+                                         children:@[action3, action4, action5]];
     UIMenu *mainMenu = [UIMenu menuWithTitle:@"" children:@[downloadMenu, copyMenu]];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
@@ -1272,42 +1281,42 @@ static BOOL isAuthenticationShowed = FALSE;
 
     }
     UIAction *allPhotosAction = [UIAction actionWithTitle:@"Download All Photos"
-                                            image:[UIImage systemImageNamed:@"photo.fill"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadPhotos:rootVC];
+                                             image:[UIImage systemImageNamed:@"photo.fill"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadPhotos:rootVC];
     }];
     [photosActions addObject:allPhotosAction];
     UIAction *action2 = [UIAction actionWithTitle:@"Download Music"
-                                            image:[UIImage systemImageNamed:@"music.note"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"music.note"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadMusic:rootVC];
     }];
     UIAction *action3 = [UIAction actionWithTitle:@"Copy Music link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyMusic:rootVC];
     }];
     UIAction *action4 = [UIAction actionWithTitle:@"Copy Video link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyVideo:rootVC];
     }];
     UIAction *action5 = [UIAction actionWithTitle:@"Copy Decription"
-                                            image:[UIImage systemImageNamed:@"note.text"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyDecription:rootVC];
+                                             image:[UIImage systemImageNamed:@"note.text"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyDecription:rootVC];
     }];
     UIMenu *PhotosMenu = [UIMenu menuWithTitle:@"Download Photos Menu"
-                                        children:photosActions];
+                                         children:photosActions];
     UIMenu *downloadMenu = [UIMenu menuWithTitle:@"Downloads Menu"
-                                        children:@[action2]];
+                                         children:@[action2]];
     UIMenu *copyMenu = [UIMenu menuWithTitle:@"Copy Menu"
-                                        children:@[action3, action4, action5]];
+                                         children:@[action3, action4, action5]];
     UIMenu *mainMenu = [UIMenu menuWithTitle:@"" children:@[PhotosMenu, downloadMenu, copyMenu]];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
@@ -1329,46 +1338,66 @@ static BOOL isAuthenticationShowed = FALSE;
 
     }
         UIAction *allPhotosAction = [UIAction actionWithTitle:@"Download Photos"
-                                            image:[UIImage systemImageNamed:@"photo.fill"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadPhotos:rootVC];
+                                             image:[UIImage systemImageNamed:@"photo.fill"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadPhotos:rootVC];
     }];
     [photosActions addObject:allPhotosAction];
     UIAction *action2 = [UIAction actionWithTitle:@"Download Music"
-                                            image:[UIImage systemImageNamed:@"music.note"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self downloadMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"music.note"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self downloadMusic:rootVC];
     }];
     UIAction *action3 = [UIAction actionWithTitle:@"Copy Music link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyMusic:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyMusic:rootVC];
     }];
     UIAction *action4 = [UIAction actionWithTitle:@"Copy Video link"
-                                            image:[UIImage systemImageNamed:@"link"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyVideo:rootVC];
+                                             image:[UIImage systemImageNamed:@"link"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyVideo:rootVC];
     }];
     UIAction *action5 = [UIAction actionWithTitle:@"Copy Decription"
-                                            image:[UIImage systemImageNamed:@"note.text"]
-                                       identifier:nil
-                                          handler:^(__kindof UIAction * _Nonnull action) {
-                                            [self copyDecription:rootVC];
+                                             image:[UIImage systemImageNamed:@"note.text"]
+                                        identifier:nil
+                                           handler:^(__kindof UIAction * _Nonnull action) {
+                                             [self copyDecription:rootVC];
     }];
     UIMenu *PhotosMenu = [UIMenu menuWithTitle:@"Download Photos Menu"
-                                        children:photosActions];
+                                         children:photosActions];
     UIMenu *downloadMenu = [UIMenu menuWithTitle:@"Downloads Menu"
-                                        children:@[action2]];
+                                         children:@[action2]];
     UIMenu *copyMenu = [UIMenu menuWithTitle:@"Copy Menu"
-                                        children:@[action3, action4, action5]];
+                                         children:@[action3, action4, action5]];
     UIMenu *mainMenu = [UIMenu menuWithTitle:@"" children:@[PhotosMenu, downloadMenu, copyMenu]];
     [sender setMenu:mainMenu];
     sender.showsMenuAsPrimaryAction = YES;
     }
+}
+%new - (void)addFlexButton {
+    UIButton *flexButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [flexButton setTag:1000];
+    [flexButton setTranslatesAutoresizingMaskIntoConstraints:false];
+    [flexButton addTarget:self action:@selector(flexButtonHandler:) forControlEvents:UIControlEventTouchUpInside];
+    [flexButton setImage:[UIImage systemImageNamed:@"curlybraces.square"] forState:UIControlStateNormal];
+    if (![self viewWithTag:1000]) {
+        [flexButton setTintColor:[UIColor whiteColor]];
+        [self addSubview:flexButton];
+        [NSLayoutConstraint activateConstraints:@[
+            [flexButton.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:130],
+            [flexButton.trailingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.trailingAnchor constant:-10],
+            [flexButton.widthAnchor constraintEqualToConstant:30],
+            [flexButton.heightAnchor constraintEqualToConstant:30],
+        ]];
+    }
+}
+%new - (void)flexButtonHandler:(UIButton *)sender {
+    [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
 }
 %new - (void)addHideElementButton {
     UIButton *hideElementButton = [UIButton buttonWithType:UIButtonTypeSystem];
