@@ -1,6 +1,6 @@
 # BHTikTok++
 
-An awesome tweak for TikTok!
+**BHTikTok++** is a powerful and feature-rich tweak for the TikTok application, designed to enhance your viewing and interaction experience. It offers a wide range of functionalities, from advanced media downloads and UI customization to privacy enhancements and developer tools.
 
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue.svg)](docs/)
 [![Platform](https://img.shields.io/badge/platform-iOS-lightgrey.svg)](https://developer.apple.com/ios/)
@@ -116,9 +116,17 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 
 ### Prerequisites
 
-- Jailbroken iOS device (iOS 12.0+)
-- Cydia, Sileo, or compatible package manager
-- MobileSubstrate installed
+- **Jailbroken iOS device** (iOS 15.4.3+ tested, iOS 12.0+ supported)
+- **Cydia, Sileo, or compatible package manager**
+- **MobileSubstrate** installed
+- **[FLEXing](https://alias20.gitlab.io/apt/)** and **[libflex](https://alias20.gitlab.io/apt/)** installed from the provided repository
+
+### Tested Configuration
+
+- **iOS Version**: 15.4.3 rootless
+- **Device**: iPhone 12 Pro Max (A13)
+- **Jailbreak**: Dopamine
+- **Status**: Fully functional and tested
 
 ### From Package Manager
 
@@ -139,6 +147,83 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
    # Navigate to the .deb file and tap to install
    ```
 3. Restart TikTok application
+
+### Building from Source
+
+For this method, you will need a development environment with Theos set up. Follow these comprehensive setup steps:
+
+#### 1. Prerequisites Setup
+
+```bash
+# Install full Xcode from App Store (required - Command Line Tools alone are insufficient)
+# After installation, accept the license:
+sudo xcodebuild -license accept
+
+# Verify Xcode installation
+xcode-select --print-path
+```
+
+#### 2. Theos Installation
+
+```bash
+# Install Theos using the official installation script
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+
+# The script will automatically:
+# - Install Theos to /opt/theos
+# - Set up environment variables
+# - Configure your shell profile
+
+# Verify installation
+echo $THEOS
+# Should output: /opt/theos
+
+# Restart your terminal or source your shell profile
+source ~/.zshrc  # or ~/.bash_profile for bash users
+```
+
+#### 3. Project Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+cd BHTikTokPlusPlusPlus
+
+# Add upstream remote (if working with a fork)
+git remote add upstream https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+
+# Install dependencies and build
+make clean && make
+```
+
+#### 4. Device Configuration
+
+```bash
+# Configure your test device
+export THEOS_DEVICE_IP=YOUR_DEVICE_IP
+export THEOS_DEVICE_USER=root
+
+# Test connection
+ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
+```
+
+#### 5. Build and Install
+
+```bash
+# Build and install the tweak to your device
+make install
+
+# Alternatively, create a package first
+make package
+
+# Then install manually
+make install
+```
+
+#### 6. Final Steps
+
+1. **Restart the TikTok application** after installation
+2. **Verify installation** by checking TikTok settings for BHTikTok++ options
 
 ## ⚙️ Configuration
 
@@ -172,18 +257,22 @@ On first installation, the following features are enabled by default:
 
 ### Build Requirements
 
-- **macOS** with Xcode Command Line Tools
-- **Theos** development framework
-- **iOS SDK** (iOS 16.5+)
-- **Device** or **Simulator** for testing
+- **macOS** with **full Xcode** installed (not just Command Line Tools)
+- **Theos** development framework (installed via official script)
+- **iOS SDK** (iOS 15.4.3+ tested)
+- **Git** with proper SSH key configuration
+- **Jailbroken iOS device** or **iOS Simulator** for testing
+- Understanding of **Objective-C** and **Logos syntax**
+
+> **Note**: For complete development environment setup, see the [Building from Source](#building-from-source) section above.
 
 ### Build Process
 
-```bash
-# Clone the repository
-git clone https://github.com/user/BHTikTokPlusPlusPlus.git
-cd BHTikTokPlusPlusPlus
+This project uses **Theos** for its build system. The `Makefile` contains all the necessary targets for compiling, packaging, and installing the tweak.
 
+#### Basic Commands
+
+```bash
 # Clean and build
 make clean && make
 
@@ -194,16 +283,30 @@ make install
 make package
 ```
 
-### Development Setup
+#### Advanced Commands
 
 ```bash
-# Configure Theos environment
-export THEOS=/opt/theos
+# Release Package - Create an optimized release package
+make package FINALPACKAGE=1
 
-# Set device IP for installation
-export THEOS_DEVICE_IP=192.168.1.100
-export THEOS_DEVICE_USER=root
+# Debug Symbols - Create a release package with debug symbols included
+make package FINALPACKAGE=1 STRIP=0
+
+# Verbose Output - Get detailed build information for troubleshooting
+make messages=yes
 ```
+
+#### Common Make Commands
+
+| Command | Description |
+| :--- | :--- |
+| `make` | Compile source files that have changed since the last build |
+| `make clean` | Remove all compiled files from the build directory |
+| `make package` | Build the tweak and create a `.deb` package in the `./packages/` directory |
+| `make install` | Compile and install the tweak directly to your connected device |
+| `make do` | A convenient shortcut for `make package install` (recommended for development) |
+
+For a complete list of commands, refer to the official [Theos Documentation](https://theos.dev/docs/commands).
 
 ### Project Structure
 

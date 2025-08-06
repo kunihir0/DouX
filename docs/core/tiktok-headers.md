@@ -334,6 +334,23 @@ static BOOL is_iPad() {
 
 ## Advanced Class Interfaces
 
+### AWEURLModel Extensions
+**Location**: [Lines 1691-1727](../../Tweak.x#L1691)
+
+```objective-c
+@interface AWEURLModel : NSObject
+- (NSURL *)bestURLtoDownload;
+- (NSString *)bestURLtoDownloadFormat;
+@end
+```
+
+**Purpose**: These methods are added to the `AWEURLModel` class to provide a consistent way to get the best URL for downloading a media file and to determine the file format.
+
+Method | Purpose |
+|---|---|
+`bestURLtoDownload` | Returns the best quality URL for downloading a media file. |
+`bestURLtoDownloadFormat` | Returns the file format of the media file. |
+
 ### Profile Enhancement Classes
 **Location**: [Lines 376-383](../../TikTokHeaders.h#L376)
 
@@ -347,7 +364,7 @@ static BOOL is_iPad() {
 @end
 ```
 
-**Extended Methods**: 
+**Extended Methods**:
 - `formattedStringFromNumber:` - Number formatting for fake counts
 - `numberFromUserDefaultsForKey:` - Settings access helper
 
