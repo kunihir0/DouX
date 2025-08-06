@@ -147,6 +147,21 @@ graph LR
 - [`downloadPhotos:`](../../Tweak.x#L1147) - Photo album downloads
 - [`downloadMusic:`](../../Tweak.x#L1170) - Audio extraction
 
+#### FLEX Button Integration
+**Location**: [Lines 1074-1077](../../Tweak.x#L1074)
+
+```objective-c
+- (void)configWithModel:(id)model {
+    %orig;
+    // ...
+    if ([BHIManager flexEnabled]) {
+        [self addFlexButton];
+    }
+}
+```
+
+**Purpose**: Adds a button to the feed cell to launch the FLEX explorer for debugging.
+
 #### UI Element Control
 **Location**: [Lines 1373-1410](../../Tweak.x#L1373)
 
@@ -224,8 +239,11 @@ The tweak implements comprehensive region spoofing by hooking multiple carrier a
 - `CTCarrier` - Mobile carrier information
 - `TTKStoreRegionService` - App Store region
 - `TIKTOKRegionManager` - TikTok region management
-- `TTInstallIDManager` - Installation region tracking
+- `TTKPassportAppStoreRegionModel`
 - `ATSRegionCacheManager` - Region caching
+- `TTKStoreRegionModel`
+- `TTInstallIDManager` - Installation region tracking
+- `BDInstallGlobalConfig`
 
 ### 6. Security and Anti-Detection
 
@@ -254,12 +272,23 @@ The tweak includes comprehensive jailbreak detection bypass:
 - Mobile provision checks
 
 **Hooked Classes for Detection Bypass**:
+- `NSFileManager`
 - `BDADeviceHelper`
 - `UIDevice`
 - `TTInstallUtil`
 - `AppsFlyerUtils`
+- `PIPOIAPStoreManager`
+- `IESLiveDeviceInfo`
+- `PIPOStoreKitHelper`
+- `BDInstallNetworkUtility`
+- `TTAdSplashDeviceHelper`
 - `GULAppEnvironmentUtil`
 - `FBSDKAppEventsUtility`
+- `AWEAPMManager`
+- `NSBundle`
+- `AWESecurity`
+- `MSManagerOV`
+- `MSConfigOV`
 
 ### 7. Confirmation System
 

@@ -29,6 +29,83 @@ A powerful iOS tweak that enhances your TikTok experience with additional featur
 2. Install with your Package Manager like Sileo or what ever your setup is
 3. Restart TikTok
 
+### Building from Source
+
+For this method, you will need a development environment with Theos set up. Follow these comprehensive setup steps:
+
+#### 1. Prerequisites Setup
+
+```bash
+# Install full Xcode from App Store (required - Command Line Tools alone are insufficient)
+# After installation, accept the license:
+sudo xcodebuild -license accept
+
+# Verify Xcode installation
+xcode-select --print-path
+```
+
+#### 2. Theos Installation
+
+```bash
+# Install Theos using the official installation script
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+
+# The script will automatically:
+# - Install Theos to /opt/theos
+# - Set up environment variables
+# - Configure your shell profile
+
+# Verify installation
+echo $THEOS
+# Should output: /opt/theos
+
+# Restart your terminal or source your shell profile
+source ~/.zshrc  # or ~/.bash_profile for bash users
+```
+
+#### 3. Project Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+cd BHTikTokPlusPlusPlus
+
+# Add upstream remote (if working with a fork)
+git remote add upstream https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+
+# Install dependencies and build
+make clean && make
+```
+
+#### 4. Device Configuration
+
+```bash
+# Configure your test device
+export THEOS_DEVICE_IP=YOUR_DEVICE_IP
+export THEOS_DEVICE_USER=root
+
+# Test connection
+ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
+```
+
+#### 5. Build and Install
+
+```bash
+# Build and install the tweak to your device
+make install
+
+# Alternatively, create a package first
+make package
+
+# Then install manually
+make install
+```
+
+#### 6. Final Steps
+
+1. **Restart the TikTok application** after installation
+2. **Verify installation** by checking TikTok settings for BHTikTok++ options
+
 ## ⚙️ Configuration
 
 1. Open TikTok → Profile → Settings
@@ -37,6 +114,7 @@ A powerful iOS tweak that enhances your TikTok experience with additional featur
 
 # Building from source
 ```bash
+# Clean and build
 # Clone the project
 git clone https://github.com/kunhir0/BHTikTokPlusPlusPlus.git
 

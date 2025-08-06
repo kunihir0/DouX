@@ -24,6 +24,7 @@ Thank you for your interest in contributing to BHTikTok++! This document outline
 - **Git** with proper SSH key configuration
 - **Jailbroken iOS device** or **iOS Simulator** for testing
 - Understanding of **Objective-C** and **Logos syntax**
+- [FLEXing](https://alias20.gitlab.io/apt/) and [libflex](https://alias20.gitlab.io/apt/) installed from the provided repository.
 
 ### Quick Start
 

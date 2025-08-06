@@ -33,13 +33,14 @@
 + (NSNumber *)selectedLiveAction;
 + (BOOL)liveActionEnabled;
 + (BOOL)speedEnabled;
-+ (NSDictionary *)selectedSpeed;
++ (NSNumber *)selectedSpeed;
 + (BOOL)fakeChangesEnabled;
 + (BOOL)fakeVerified;
 + (BOOL)uploadHD;
 + (BOOL)extendedBio;
 + (BOOL)extendedComment;
 + (BOOL)appLock;
++ (BOOL)flexEnabled;
 + (void)showSaveVC:(id)item;
 + (void)cleanCache;
 + (BOOL)isEmpty:(NSURL *)url;
