@@ -46,11 +46,34 @@ jobs:
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
           
+      - name: Install iOS SDK
+        run: |
+          echo "Installing iOS SDK..."
+          cd /opt/theos/sdks
+          
+          # Download iOS 16.5 SDK
+          curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
+          
+          # Extract the SDK
+          tar -xf iPhoneOS16.5.sdk.tar.xz
+          
+          # Clean up the archive
+          rm iPhoneOS16.5.sdk.tar.xz
+          
+          # Verify SDK installation
+          echo "Installed SDKs:"
+          ls -la /opt/theos/sdks/
+          
       - name: Verify Theos Installation
         run: |
           echo "Verifying Theos installation..."
           echo "THEOS path: $THEOS"
+          echo "Theos directory contents:"
           ls -la $THEOS/
+          echo "Available iOS SDKs:"
+          ls -la $THEOS/sdks/
+          echo "Makefiles directory:"
+          ls -la $THEOS/makefiles/ | head -10
           
       - name: Update version in control file
         run: |

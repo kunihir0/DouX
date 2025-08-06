@@ -43,8 +43,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /opt/theos
-          key: theos-${{ runner.os }}-${{ hashFiles('Makefile') }}
+          key: theos-with-sdk-${{ runner.os }}-${{ hashFiles('Makefile') }}
           restore-keys: |
+            theos-with-sdk-${{ runner.os }}-
             theos-${{ runner.os }}-
         
       - name: Install Theos
@@ -56,6 +57,27 @@ jobs:
             echo "Using cached Theos installation"
           fi
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
+          
+      - name: Install iOS SDK
+        run: |
+          # Check if SDK already exists (from cache)
+          if [[ ! -d "/opt/theos/sdks/iPhoneOS16.5.sdk" ]]; then
+            echo "Installing iOS SDK..."
+            cd /opt/theos/sdks
+            
+            # Download iOS 16.5 SDK
+            curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
+            
+            # Extract the SDK
+            tar -xf iPhoneOS16.5.sdk.tar.xz
+            
+            # Clean up the archive
+            rm iPhoneOS16.5.sdk.tar.xz
+            
+            echo "iOS SDK installed successfully"
+          else
+            echo "Using cached iOS SDK"
+          fi
           
       - name: Verify build environment
         run: |
