@@ -52,7 +52,15 @@ jobs:
         run: |
           if [[ ! -d "/opt/theos" ]]; then
             echo "Installing Theos..."
-            bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+            # Install Theos to /opt/theos
+            sudo mkdir -p /opt/theos
+            sudo chown -R $(whoami) /opt/theos
+            
+            # Clone Theos manually for more control
+            git clone --recursive https://github.com/theos/theos.git /opt/theos
+            
+            # Install required dependencies
+            brew install ldid xz
           else
             echo "Using cached Theos installation"
           fi
@@ -63,12 +71,15 @@ jobs:
           # Check if SDK already exists (from cache)
           if [[ ! -d "/opt/theos/sdks/iPhoneOS16.5.sdk" ]]; then
             echo "Installing iOS SDK..."
+            mkdir -p /opt/theos/sdks
             cd /opt/theos/sdks
             
             # Download iOS 16.5 SDK
+            echo "Downloading iOS 16.5 SDK..."
             curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
             
             # Extract the SDK
+            echo "Extracting iOS SDK..."
             tar -xf iPhoneOS16.5.sdk.tar.xz
             
             # Clean up the archive

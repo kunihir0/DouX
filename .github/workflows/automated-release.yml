@@ -43,18 +43,30 @@ jobs:
       - name: Install Theos
         run: |
           echo "Installing Theos..."
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          # Install Theos to /opt/theos instead of default location
+          sudo mkdir -p /opt/theos
+          sudo chown -R $(whoami) /opt/theos
+          
+          # Clone Theos manually for more control
+          git clone --recursive https://github.com/theos/theos.git /opt/theos
+          
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
+          
+          # Install required dependencies
+          brew install ldid xz
           
       - name: Install iOS SDK
         run: |
           echo "Installing iOS SDK..."
+          mkdir -p /opt/theos/sdks
           cd /opt/theos/sdks
           
           # Download iOS 16.5 SDK
+          echo "Downloading iOS 16.5 SDK..."
           curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
           
           # Extract the SDK
+          echo "Extracting iOS SDK..."
           tar -xf iPhoneOS16.5.sdk.tar.xz
           
           # Clean up the archive
