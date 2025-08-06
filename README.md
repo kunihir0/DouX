@@ -116,9 +116,16 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 
 ### Prerequisites
 
-- Jailbroken iOS device (iOS 12.0+)
-- Cydia, Sileo, or compatible package manager
-- MobileSubstrate installed
+- **Jailbroken iOS device** (iOS 15.4.3+ tested, iOS 12.0+ supported)
+- **Cydia, Sileo, or compatible package manager**
+- **MobileSubstrate** installed
+
+### Tested Configuration
+
+- **iOS Version**: 15.4.3 rootless
+- **Device**: iPhone 12 Pro Max (A13)
+- **Jailbreak**: Dopamine
+- **Status**: Fully functional and tested
 
 ### From Package Manager
 
@@ -172,18 +179,73 @@ On first installation, the following features are enabled by default:
 
 ### Build Requirements
 
-- **macOS** with Xcode Command Line Tools
-- **Theos** development framework
-- **iOS SDK** (iOS 16.5+)
-- **Device** or **Simulator** for testing
+- **macOS** with **full Xcode** installed (not just Command Line Tools)
+- **Theos** development framework (installed via official script)
+- **iOS SDK** (iOS 15.4.3+ tested)
+- **Git** with proper SSH key configuration
+- **Jailbroken iOS device** or **iOS Simulator** for testing
+- Understanding of **Objective-C** and **Logos syntax**
+
+### Development Environment Setup
+
+#### 1. Prerequisites Setup
+
+```bash
+# Install full Xcode from App Store (required - Command Line Tools alone are insufficient)
+# After installation, accept the license:
+sudo xcodebuild -license accept
+
+# Verify Xcode installation
+xcode-select --print-path
+```
+
+#### 2. Theos Installation
+
+```bash
+# Install Theos using the official installation script
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+
+# The script will automatically:
+# - Install Theos to /opt/theos
+# - Set up environment variables
+# - Configure your shell profile
+
+# Verify installation
+echo $THEOS
+# Should output: /opt/theos
+
+# Restart your terminal or source your shell profile
+source ~/.zshrc  # or ~/.bash_profile for bash users
+```
+
+#### 3. Project Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+cd BHTikTokPlusPlusPlus
+
+# Add upstream remote (if working with a fork)
+git remote add upstream https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+
+# Install dependencies and build
+make clean && make
+```
+
+#### 4. Device Configuration
+
+```bash
+# Configure your test device
+export THEOS_DEVICE_IP=YOUR_DEVICE_IP
+export THEOS_DEVICE_USER=root
+
+# Test connection
+ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
+```
 
 ### Build Process
 
 ```bash
-# Clone the repository
-git clone https://github.com/user/BHTikTokPlusPlusPlus.git
-cd BHTikTokPlusPlusPlus
-
 # Clean and build
 make clean && make
 
@@ -192,17 +254,6 @@ make install
 
 # Create package
 make package
-```
-
-### Development Setup
-
-```bash
-# Configure Theos environment
-export THEOS=/opt/theos
-
-# Set device IP for installation
-export THEOS_DEVICE_IP=192.168.1.100
-export THEOS_DEVICE_USER=root
 ```
 
 ### Project Structure
