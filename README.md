@@ -116,10 +116,10 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 
 ### Prerequisites
 
-<<<<<<< HEAD
 - **Jailbroken iOS device** (iOS 15.4.3+ tested, iOS 12.0+ supported)
 - **Cydia, Sileo, or compatible package manager**
 - **MobileSubstrate** installed
+- **[FLEXing](https://alias20.gitlab.io/apt/)** and **[libflex](https://alias20.gitlab.io/apt/)** installed from the provided repository
 
 ### Tested Configuration
 
@@ -127,12 +127,6 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 - **Device**: iPhone 12 Pro Max (A13)
 - **Jailbreak**: Dopamine
 - **Status**: Fully functional and tested
-=======
-- Jailbroken iOS device (iOS 12.0+)
-- Cydia, Sileo, or compatible package manager
-- MobileSubstrate installed
-- [FLEXing](https://alias20.gitlab.io/apt/) and [libflex](https://alias20.gitlab.io/apt/) installed from the provided repository.
->>>>>>> origin/staging
 
 ### From Package Manager
 
@@ -141,68 +135,22 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 3. Install the package
 4. Restart SpringBoard if prompted
 
+### Manual Installation
+
+1. Download the latest `.deb` file from releases
+2. Install using your preferred method:
+   ```bash
+   # Via SSH
+   dpkg -i BHTikTok++.deb
+   
+   # Via Filza
+   # Navigate to the .deb file and tap to install
+   ```
+3. Restart TikTok application
+
 ### Building from Source
-For this method, you will need a development environment with Theos set up.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
-   cd BHTikTokPlusPlusPlus
-   ```
-
-2. **Configure your device:**
-   Make sure your device's IP address is set in your environment or `Makefile`.
-   ```bash
-   export THEOS_DEVICE_IP=YOUR_DEVICE_IP
-   ```
-
-3. **Build and install the tweak:**
-   ```bash
-   make install
-   ```
-
-4. **Restart the TikTok application.**
-
-## ⚙️ Configuration
-
-### Accessing Settings
-
-1. Open TikTok
-2. Navigate to **Profile** → **Settings**
-3. Look for **"BHTikTok++ settings"** in the Account section
-4. Configure desired features
-
-### Key Settings Categories
-
-- **Feed Settings** - Download buttons, ad blocking, UI modifications
-- **Profile Settings** - Profile enhancements and customizations
-- **Confirmation Settings** - User action confirmations
-- **Region Settings** - Location spoofing configuration
-- **Speed Settings** - Video playback speed control
-- **Security Settings** - App lock and privacy features
-
-### First Run Setup
-
-On first installation, the following features are enabled by default:
-- Hide Ads
-- Download Button
-- Show/Hide UI Button
-- Show Progress Bar
-- Profile Save and Copy features
-- Extended Bio and Comments
-
-## 🛠️ Development
-
-### Build Requirements
-
-- **macOS** with **full Xcode** installed (not just Command Line Tools)
-- **Theos** development framework (installed via official script)
-- **iOS SDK** (iOS 15.4.3+ tested)
-- **Git** with proper SSH key configuration
-- **Jailbroken iOS device** or **iOS Simulator** for testing
-- Understanding of **Objective-C** and **Logos syntax**
-
-### Development Environment Setup
+For this method, you will need a development environment with Theos set up. Follow these comprehensive setup steps:
 
 #### 1. Prerequisites Setup
 
@@ -259,40 +207,105 @@ export THEOS_DEVICE_USER=root
 ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
 ```
 
+#### 5. Build and Install
+
+```bash
+# Build and install the tweak to your device
+make install
+
+# Alternatively, create a package first
+make package
+
+# Then install manually
+make install
+```
+
+#### 6. Final Steps
+
+1. **Restart the TikTok application** after installation
+2. **Verify installation** by checking TikTok settings for BHTikTok++ options
+
+## ⚙️ Configuration
+
+### Accessing Settings
+
+1. Open TikTok
+2. Navigate to **Profile** → **Settings**
+3. Look for **"BHTikTok++ settings"** in the Account section
+4. Configure desired features
+
+### Key Settings Categories
+
+- **Feed Settings** - Download buttons, ad blocking, UI modifications
+- **Profile Settings** - Profile enhancements and customizations
+- **Confirmation Settings** - User action confirmations
+- **Region Settings** - Location spoofing configuration
+- **Speed Settings** - Video playback speed control
+- **Security Settings** - App lock and privacy features
+
+### First Run Setup
+
+On first installation, the following features are enabled by default:
+- Hide Ads
+- Download Button
+- Show/Hide UI Button
+- Show Progress Bar
+- Profile Save and Copy features
+- Extended Bio and Comments
+
+## 🛠️ Development
+
+### Build Requirements
+
+- **macOS** with **full Xcode** installed (not just Command Line Tools)
+- **Theos** development framework (installed via official script)
+- **iOS SDK** (iOS 15.4.3+ tested)
+- **Git** with proper SSH key configuration
+- **Jailbroken iOS device** or **iOS Simulator** for testing
+- Understanding of **Objective-C** and **Logos syntax**
+
+> **Note**: For complete development environment setup, see the [Building from Source](#building-from-source) section above.
+
 ### Build Process
+
 This project uses **Theos** for its build system. The `Makefile` contains all the necessary targets for compiling, packaging, and installing the tweak.
 
-<<<<<<< HEAD
+#### Basic Commands
+
 ```bash
 # Clean and build
 make clean && make
-=======
-#### Common Commands
-Here are some of the most frequently used `make` commands:
 
-| Command | Description |
-| :--- | :--- |
-| `make` | Compile source files that have changed since the last build. |
-| `make clean` | Remove all compiled files from the build directory. Use this if you encounter strange build errors. |
-| `make package` | Build the tweak and create a `.deb` package in the `./packages/` directory. |
-| `make install` | Compile and install the tweak directly to your connected device (requires `THEOS_DEVICE_IP` to be set). |
-| `make do` | A convenient shortcut for `make package install`. This is the recommended command for most development cycles. |
->>>>>>> origin/staging
+# Install to device
+make install
+
+# Create package
+make package
+```
 
 #### Advanced Commands
 
-- **Release Package**: To create an optimized release package, use the `FINALPACKAGE=1` flag.
-  ```bash
-  make package FINALPACKAGE=1
-  ```
-- **Debug Symbols**: To create a release package with debug symbols included, use `STRIP=0`.
-  ```bash
-  make package FINALPACKAGE=1 STRIP=0
-  ```
-- **Verbose Output**: To get more detailed build information for troubleshooting, use `messages=yes`.
-  ```bash
-  make messages=yes
-  ```
+```bash
+# Release Package - Create an optimized release package
+make package FINALPACKAGE=1
+
+# Debug Symbols - Create a release package with debug symbols included
+make package FINALPACKAGE=1 STRIP=0
+
+# Verbose Output - Get detailed build information for troubleshooting
+make messages=yes
+```
+
+#### Common Make Commands
+
+| Command | Description |
+| :--- | :--- |
+| `make` | Compile source files that have changed since the last build |
+| `make clean` | Remove all compiled files from the build directory |
+| `make package` | Build the tweak and create a `.deb` package in the `./packages/` directory |
+| `make install` | Compile and install the tweak directly to your connected device |
+| `make do` | A convenient shortcut for `make package install` (recommended for development) |
+
 For a complete list of commands, refer to the official [Theos Documentation](https://theos.dev/docs/commands).
 
 ### Project Structure
