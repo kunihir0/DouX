@@ -1,0 +1,171 @@
+name: Automated Release
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+      packages: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+        
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building BHTikTok++ version: $VERSION"
+        
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+          
+      - name: Accept Xcode License
+        run: sudo xcodebuild -license accept
+        
+      - name: Install Theos
+        run: |
+          echo "Installing Theos..."
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          echo "THEOS=/opt/theos" >> $GITHUB_ENV
+          
+      - name: Verify Theos Installation
+        run: |
+          echo "Verifying Theos installation..."
+          echo "THEOS path: $THEOS"
+          ls -la $THEOS/
+          
+      - name: Update version in control file
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Remove 'v' prefix if present for control file
+          CLEAN_VERSION=${VERSION#v}
+          echo "Updating control file with version: $CLEAN_VERSION"
+          sed -i.bak "s/^Version:.*/Version: $CLEAN_VERSION/" control
+          cat control
+          
+      - name: Clean and build tweak
+        run: |
+          echo "Building BHTikTok++ tweak..."
+          export THEOS=/opt/theos
+          make clean
+          make package FINALPACKAGE=1
+          
+      - name: List build artifacts
+        run: |
+          echo "Build completed. Listing artifacts..."
+          find . -name "*.deb" -type f
+          ls -la packages/ || echo "No packages directory found"
+          
+      - name: Prepare release assets
+        id: prepare_assets
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          CLEAN_VERSION=${VERSION#v}
+          
+          # Find the generated .deb file
+          DEB_FILE=$(find packages -name "*.deb" -type f | head -1)
+          
+          if [[ -f "$DEB_FILE" ]]; then
+            # Rename to include version
+            NEW_DEB_NAME="BHTikTok++-${CLEAN_VERSION}.deb"
+            cp "$DEB_FILE" "$NEW_DEB_NAME"
+            echo "DEB_FILE=$NEW_DEB_NAME" >> $GITHUB_OUTPUT
+            echo "Found and renamed .deb file: $NEW_DEB_NAME"
+            ls -la "$NEW_DEB_NAME"
+          else
+            echo "ERROR: No .deb file found!"
+            exit 1
+          fi
+          
+          # Create source archive (excluding build artifacts)
+          echo "Creating source archive..."
+          zip -r BHTikTok++-${CLEAN_VERSION}-source.zip . \
+            -x ".git/*" ".github/*" "packages/*" ".theos/*" "*.deb" \
+               "obj/*" ".DS_Store" "*.bak"
+          echo "SOURCE_ZIP=BHTikTok++-${CLEAN_VERSION}-source.zip" >> $GITHUB_OUTPUT
+          
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          echo "Generating changelog for version $VERSION"
+          
+          # Try to get changelog from tag message or recent commits
+          if git tag -l --format='%(contents)' "$VERSION" | head -1 | grep -q .; then
+            CHANGELOG=$(git tag -l --format='%(contents)' "$VERSION")
+          else
+            echo "## Changes in $VERSION" > changelog.md
+            echo "" >> changelog.md
+            
+            # Get commits since last tag
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [[ -n "$PREV_TAG" ]]; then
+              echo "### Commits since $PREV_TAG:" >> changelog.md
+              git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" >> changelog.md
+            else
+              echo "### Recent commits:" >> changelog.md
+              git log --pretty=format:"- %s (%h)" -10 >> changelog.md
+            fi
+            
+            CHANGELOG=$(cat changelog.md)
+          fi
+          
+          # Save changelog to file for release notes
+          echo "$CHANGELOG" > release_notes.md
+          echo "Generated changelog:"
+          cat release_notes.md
+          
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            ${{ steps.prepare_assets.outputs.DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
+          body_path: release_notes.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BHTikTok++-${{ steps.get_version.outputs.VERSION }}
+          path: |
+            ${{ steps.prepare_assets.outputs.DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
+            release_notes.md
+          retention-days: 30
+          
+      - name: Build summary
+        run: |
+          echo "## ✅ BHTikTok++ Release Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Debian Package:** ${{ steps.prepare_assets.outputs.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Source Archive:** ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
+          echo "- Ready-to-install .deb package for jailbroken iOS devices" >> $GITHUB_STEP_SUMMARY
+          echo "- Complete source code archive" >> $GITHUB_STEP_SUMMARY
+          echo "- Automated changelog generation" >> $GITHUB_STEP_SUMMARY

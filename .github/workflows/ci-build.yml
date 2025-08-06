@@ -1,0 +1,169 @@
+name: CI Build
+
+on:
+  push:
+    branches: [ dev, staging, main ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      
+  pull_request:
+    branches: [ dev, staging, main ]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+
+jobs:
+  build-test:
+    runs-on: macos-latest
+    
+    strategy:
+      matrix:
+        xcode: ['15.2', '14.3']
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+        
+      - name: Setup Xcode ${{ matrix.xcode }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode }}
+          
+      - name: Accept Xcode License
+        run: sudo xcodebuild -license accept
+        
+      - name: Cache Theos
+        uses: actions/cache@v3
+        with:
+          path: /opt/theos
+          key: theos-${{ runner.os }}-${{ hashFiles('Makefile') }}
+          restore-keys: |
+            theos-${{ runner.os }}-
+        
+      - name: Install Theos
+        run: |
+          if [[ ! -d "/opt/theos" ]]; then
+            echo "Installing Theos..."
+            bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          else
+            echo "Using cached Theos installation"
+          fi
+          echo "THEOS=/opt/theos" >> $GITHUB_ENV
+          
+      - name: Verify build environment
+        run: |
+          echo "=== Build Environment Info ==="
+          echo "Xcode version: $(xcode-select -v)"
+          echo "Xcode path: $(xcode-select -p)"
+          echo "THEOS path: $THEOS"
+          echo "Available iOS SDKs:"
+          ls -la $THEOS/sdks/ || echo "No SDKs found in Theos"
+          echo "Makefile content:"
+          cat Makefile
+          
+      - name: Clean build
+        run: |
+          export THEOS=/opt/theos
+          make clean || echo "Clean completed with warnings"
+          
+      - name: Build tweak (Debug)
+        run: |
+          echo "Building BHTikTok++ in debug mode..."
+          export THEOS=/opt/theos
+          make DEBUG=1 STRIP=0 || {
+            echo "Build failed. Showing detailed error information:"
+            echo "=== Make output ==="
+            make DEBUG=1 STRIP=0 messages=yes || true
+            echo "=== Current directory ==="
+            pwd
+            ls -la
+            echo "=== Checking for build artifacts ==="
+            find . -name "*.o" -o -name "*.dylib" -o -name "obj" 2>/dev/null || true
+            exit 1
+          }
+          
+      - name: Build tweak (Release)
+        run: |
+          echo "Building BHTikTok++ in release mode..."
+          export THEOS=/opt/theos
+          make clean
+          make FINALPACKAGE=1
+          
+      - name: Verify build artifacts
+        run: |
+          echo "=== Build Artifacts ==="
+          find . -name "*.dylib" -o -name "*.deb" 2>/dev/null || echo "No build artifacts found"
+          
+          echo "=== Package Contents ==="
+          if [[ -d "packages" ]]; then
+            ls -la packages/
+            for deb in packages/*.deb; do
+              if [[ -f "$deb" ]]; then
+                echo "Contents of $deb:"
+                dpkg-deb -c "$deb" || echo "Could not list package contents"
+              fi
+            done
+          else
+            echo "No packages directory found"
+          fi
+          
+      - name: Code quality checks
+        run: |
+          echo "=== Code Quality Checks ==="
+          
+          # Check for common issues in Objective-C/Logos code
+          echo "Checking for potential issues..."
+          
+          # Check for memory leaks patterns
+          if grep -r "alloc\]" . --include="*.m" --include="*.x" | grep -v "autorelease\|release\|ARC"; then
+            echo "⚠️  Potential memory management issues found (verify ARC usage)"
+          fi
+          
+          # Check for proper BH prefix usage
+          echo "Checking class naming conventions..."
+          grep -r "@interface.*:" . --include="*.h" --include="*.m" | grep -v "BH" && {
+            echo "⚠️  Classes should use BH prefix according to coding standards"
+          } || echo "✅ Class naming conventions look good"
+          
+          # Check for TODO/FIXME comments
+          echo "Checking for TODO/FIXME comments..."
+          TODO_COUNT=$(grep -r "TODO\|FIXME" . --include="*.h" --include="*.m" --include="*.x" | wc -l)
+          echo "Found $TODO_COUNT TODO/FIXME comments"
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: BHTikTok++-build-${{ github.sha }}-xcode-${{ matrix.xcode }}
+          path: |
+            packages/*.deb
+            obj/
+            .theos/
+          retention-days: 7
+          
+      - name: Build status summary
+        if: always()
+        run: |
+          echo "## 🔨 Build Results for Xcode ${{ matrix.xcode }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ job.status }}" == "success" ]]; then
+            echo "✅ **Build Status:** SUCCESS" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Debug Build:** Completed" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Release Build:** Completed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Build Status:** FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "Check the build logs for detailed error information." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Xcode Version:** ${{ matrix.xcode }}" >> $GITHUB_STEP_SUMMARY
