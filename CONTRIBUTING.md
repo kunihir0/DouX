@@ -69,12 +69,20 @@ source ~/.zshrc  # or ~/.bash_profile for bash users
 ### 3. Project Setup
 
 ```bash
-# Clone your fork
-git clone git@github.com:YOUR_USERNAME/BHTikTokPlusPlusPlus.git
+# Clone the main repository
+git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
 cd BHTikTokPlusPlusPlus
 
-# Add upstream remote
-git remote add upstream git@github.com:ORIGINAL_OWNER/BHTikTokPlusPlusPlus.git
+# Create your own fork on GitHub (via web interface or GitHub CLI)
+# If using GitHub CLI:
+gh repo fork --remote
+
+# If forked manually via web interface, add your fork as origin:
+# git remote rename origin upstream
+# git remote add origin git@github.com:YOUR_USERNAME/BHTikTokPlusPlusPlus.git
+
+# Fetch latest changes
+git fetch --all
 
 # Install dependencies and build
 make clean && make
@@ -91,6 +99,17 @@ export THEOS_DEVICE_USER=root
 ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
 ```
 
+Now heres where you choose to make a .deb package or have it auto-install on your device via theos
+
+```bash
+# Build and install the tweak to your device
+make install
+
+# Alternatively, create a deb package first
+make package
+```
+restart your tiktok then check for your features.. Profit~~
+
 ## 🔄 Git Workflow and Branching Strategy
 
 We use a **GitFlow-inspired** branching strategy with four main branches and feature branches for isolated development.
@@ -99,26 +118,49 @@ We use a **GitFlow-inspired** branching strategy with four main branches and fea
 
 ```mermaid
 gitGraph
-    commit id: "Initial"
-    branch dev
-    commit id: "Dev Setup"
+    commit id: "v1.5.0" type: HIGHLIGHT
+    
+    %% Create long-lived branches from main
     branch staging
-    commit id: "Staging Setup"
     checkout main
-    commit id: "v1.0.0"
-    checkout dev
-    branch feature/new-download-system
-    commit id: "Feature Work"
-    commit id: "Feature Complete"
-    checkout dev
-    merge feature/new-download-system
-    commit id: "Integrate Feature"
+    branch dev
+    
+    %% Feature development on staging
     checkout staging
-    merge dev
-    commit id: "Staging Test"
+    commit id: "Staging Start"
+    branch feature/A
+    commit id: "Work on A"
+    checkout staging
+    merge feature/A id: "PR #1: feat A"
+    branch feature/B
+    commit id: "Work on B"
+    checkout staging
+    merge feature/B id: "PR #2: feat B"
+    commit id: "Staging Ready for QA"
+    
+    %% Promote to dev for QA
+    checkout dev
+    merge staging id: "Staging → Dev for QA"
+    branch fix/qa-issue
+    commit id: "Fix QA issue"
+    checkout dev
+    merge fix/qa-issue id: "QA Fix Applied"
+    
+    %% Release to production
     checkout main
-    merge staging
-    commit id: "v1.1.0"
+    merge dev id: "Release v1.6.0" type: HIGHLIGHT
+    
+    %% Hotfix workflow
+    branch hotfix/v1.6.1
+    commit id: "Critical Prod Fix"
+    checkout main
+    merge hotfix/v1.6.1 id: "Hotfix v1.6.1" type: HIGHLIGHT
+    
+    %% Cascade hotfix down to dev and staging
+    checkout dev
+    merge main id: "Hotfix → Dev"
+    checkout staging
+    merge dev id: "Dev → Staging (includes hotfix)"
 ```
 
 ### Main Branches
@@ -465,17 +507,26 @@ echo "Version: 1.6.0" > control
 #### 3. Release Deployment
 
 ```bash
-# Merge to staging for final validation
-git checkout staging
+# First merge release branch to dev
+git checkout dev
 git merge release/v1.6.0
+git push upstream dev
 
-# After validation, merge to main
+# Then merge dev to staging for final validation
+git checkout staging
+git merge dev
+git push upstream staging
+
+# After validation, merge staging to main
 git checkout main
 git merge staging
 
 # Tag and publish
 git tag -a v1.6.0 -m "Release v1.6.0"
 git push upstream main --tags
+
+# Clean up release branch
+git branch -d release/v1.6.0
 ```
 
 ### Hotfix Process
@@ -582,7 +633,7 @@ Mockups, examples, or related features.
 
 ### 4. Vulnerability Reporting
 
-For security vulnerabilities, please email: [security@project.com] instead of creating public issues.
+For security vulnerabilities, please make a issue
 
 ## 🤝 Community Guidelines
 
@@ -617,16 +668,10 @@ Contributors will be recognized in:
 
 ### Support Channels
 
-1. **GitHub Discussions**: General questions
-2. **Stack Overflow**: Technical iOS/Objective-C questions (tag with `bhtiktok`)
-3. **Discord**: Real-time community chat (link in README)
+1. **GitHub Discussions**: General questions and community support
+2. **GitHub Issues**: Report bugs or request features
+3. **Pull Requests**: For code contributions and fixes
 
-### Mentorship
+## 📝 License
 
-New contributors can request mentorship from experienced team members. We're committed to helping you succeed!
-
----
-
-Thank you for contributing to BHTikTok++! Your efforts help make the project better for everyone. 🎉
-
-*This document is living and will be updated as our processes evolve. Last updated: January 2025*
+By contributing, you agree that your contributions will be licensed under the same license as the project (see `LICENSE` file).
