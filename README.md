@@ -1,6 +1,6 @@
 # BHTikTok++
 
-An awesome tweak for TikTok!
+**BHTikTok++** is a powerful and feature-rich tweak for the TikTok application, designed to enhance your viewing and interaction experience. It offers a wide range of functionalities, from advanced media downloads and UI customization to privacy enhancements and developer tools.
 
 [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue.svg)](docs/)
 [![Platform](https://img.shields.io/badge/platform-iOS-lightgrey.svg)](https://developer.apple.com/ios/)
@@ -116,6 +116,7 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 
 ### Prerequisites
 
+<<<<<<< HEAD
 - **Jailbroken iOS device** (iOS 15.4.3+ tested, iOS 12.0+ supported)
 - **Cydia, Sileo, or compatible package manager**
 - **MobileSubstrate** installed
@@ -126,6 +127,12 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 - **Device**: iPhone 12 Pro Max (A13)
 - **Jailbreak**: Dopamine
 - **Status**: Fully functional and tested
+=======
+- Jailbroken iOS device (iOS 12.0+)
+- Cydia, Sileo, or compatible package manager
+- MobileSubstrate installed
+- [FLEXing](https://alias20.gitlab.io/apt/) and [libflex](https://alias20.gitlab.io/apt/) installed from the provided repository.
+>>>>>>> origin/staging
 
 ### From Package Manager
 
@@ -134,18 +141,27 @@ Comprehensive technical documentation is available in the [`docs/`](docs/) direc
 3. Install the package
 4. Restart SpringBoard if prompted
 
-### Manual Installation
+### Building from Source
+For this method, you will need a development environment with Theos set up.
 
-1. Download the latest `.deb` file from releases
-2. Install using your preferred method:
+1. **Clone the repository:**
    ```bash
-   # Via SSH
-   dpkg -i BHTikTok++.deb
-   
-   # Via Filza
-   # Navigate to the .deb file and tap to install
+   git clone https://github.com/kunihir0/BHTikTokPlusPlusPlus.git
+   cd BHTikTokPlusPlusPlus
    ```
-3. Restart TikTok application
+
+2. **Configure your device:**
+   Make sure your device's IP address is set in your environment or `Makefile`.
+   ```bash
+   export THEOS_DEVICE_IP=YOUR_DEVICE_IP
+   ```
+
+3. **Build and install the tweak:**
+   ```bash
+   make install
+   ```
+
+4. **Restart the TikTok application.**
 
 ## ⚙️ Configuration
 
@@ -244,17 +260,40 @@ ssh root@$THEOS_DEVICE_IP "echo 'Connection successful'"
 ```
 
 ### Build Process
+This project uses **Theos** for its build system. The `Makefile` contains all the necessary targets for compiling, packaging, and installing the tweak.
 
+<<<<<<< HEAD
 ```bash
 # Clean and build
 make clean && make
+=======
+#### Common Commands
+Here are some of the most frequently used `make` commands:
 
-# Install to device
-make install
+| Command | Description |
+| :--- | :--- |
+| `make` | Compile source files that have changed since the last build. |
+| `make clean` | Remove all compiled files from the build directory. Use this if you encounter strange build errors. |
+| `make package` | Build the tweak and create a `.deb` package in the `./packages/` directory. |
+| `make install` | Compile and install the tweak directly to your connected device (requires `THEOS_DEVICE_IP` to be set). |
+| `make do` | A convenient shortcut for `make package install`. This is the recommended command for most development cycles. |
+>>>>>>> origin/staging
 
-# Create package
-make package
-```
+#### Advanced Commands
+
+- **Release Package**: To create an optimized release package, use the `FINALPACKAGE=1` flag.
+  ```bash
+  make package FINALPACKAGE=1
+  ```
+- **Debug Symbols**: To create a release package with debug symbols included, use `STRIP=0`.
+  ```bash
+  make package FINALPACKAGE=1 STRIP=0
+  ```
+- **Verbose Output**: To get more detailed build information for troubleshooting, use `messages=yes`.
+  ```bash
+  make messages=yes
+  ```
+For a complete list of commands, refer to the official [Theos Documentation](https://theos.dev/docs/commands).
 
 ### Project Structure
 

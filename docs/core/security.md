@@ -114,7 +114,8 @@ graph TB
             });
         }];
     } else {
-        // Biometry not available - should handle fallback
+        // Biometry not available, inform the user
+        NSLog(@"Biometry not available: %@", error.localizedDescription);
     }
 }
 ```
