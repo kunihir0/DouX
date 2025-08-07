@@ -398,17 +398,7 @@ jobs:
         uses: docker://debian:stable-slim
         with:
           entrypoint: /bin/bash
-          args: -c " \
-            set -e && \
-            apt-get update && apt-get install -y dpkg-dev bzip2 && \
-            cd /github/workspace/repo && \
-            echo '--- Generating Packages file ---' && \
-            dpkg-scanpackages --multiversion . > Packages && \
-            echo '--- Compressing Packages file ---' && \
-            bzip2 -k -f Packages && \
-            echo '--- Generating Release file ---' && \
-            apt-ftparchive release . > Release && \
-            echo '--- Repository update complete ---'"
+          args: -c "set -e && apt-get update && apt-get install -y dpkg-dev bzip2 && cd /github/workspace/repo && echo '--- Generating Packages file ---' && dpkg-scanpackages --multiversion . > Packages && echo '--- Compressing Packages file ---' && bzip2 -k -f Packages && echo '--- Generating Release file ---' && apt-ftparchive release . > Release && echo '--- Repository update complete ---'"
 
       - name: Commit and Push to gh-pages
         run: |
