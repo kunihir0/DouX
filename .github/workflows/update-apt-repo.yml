@@ -1,0 +1,110 @@
+# This GitHub Action workflow automates updating your APT repository and Sileo depiction.# This GitHub Action workflow automates updating your APT repository and Sileo depiction.
+# It triggers automatically after a new release is published.
+#
+# How it works:
+# 1. Waits for a new release to be published.
+# 2. Checks out the gh-pages branch.
+# 3. Downloads the .deb file from the new release's assets.
+# 4. Reads the release notes (changelog) and version number.
+# 5. Uses the 'jq' tool to inject the new changelog and version into sileo-depiction.json.
+# 6. Regenerates the 'Packages' and 'Release' files for the APT repo.
+# 7. Commits and pushes all updated files to the gh-pages branch.
+
+name: Update APT Repository and Sileo Depiction
+
+on:
+  release:
+    types: [published] # This workflow runs when you publish a new release
+
+jobs:
+  update-repo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push changes to the gh-pages branch
+      
+    steps:
+      - name: Checkout gh-pages Branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'gh-pages' # We are working on the gh-pages branch
+          path: 'repo'      # Checkout into a subdirectory named 'repo' to keep things clean
+
+      - name: Get Release Info
+        id: release_info
+        run: |
+          DEB_URL=$(echo "${{ toJSON(github.event.release.assets) }}" | jq -r '.[] | select(.name | endswith(".deb")) | .browser_download_url')
+          if [ -z "$DEB_URL" ]; then
+            echo "No .deb file found in the published release assets. Exiting."
+            exit 1
+          fi
+          echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT
+
+      - name: Download .deb from Release
+        run: |
+          echo "Downloading .deb from ${{ steps.release_info.outputs.deb_url }}"
+          mkdir -p repo/debs
+          curl -L "${{ steps.release_info.outputs.deb_url }}" -o "repo/debs/$(basename "${{ steps.release_info.outputs.deb_url }}")"
+
+      - name: Update Sileo Depiction File
+        run: |
+          if [ -f "repo/sileo-depiction.json" ] && [ -s "repo/sileo-depiction.json" ]; then
+          echo "Updating sileo-depiction.json with the latest changelog..."
+          # Store release body and version in variables
+          # The 'jq -R -s' command wraps the string in quotes and escapes characters to make it a valid JSON string.
+          CHANGELOG_BODY=$(echo "${{ github.event.release.body }}" | jq -R -s '.')
+          VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
+
+          # Create the new changelog entry as a JSON object. This will be a header + markdown text.
+          NEW_CHANGELOG_ENTRY=$(jq -n \
+            --arg version "$VERSION" \
+            --arg markdown "${{ github.event.release.body }}" \
+            '[
+              { "class": "DepictionSubheaderView", "title": ("Version " + $version) },
+              { "class": "DepictionMarkdownView", "markdown": $markdown },
+              { "class": "DepictionSeparatorView" }
+            ]')
+          
+          # Use jq to update the JSON file.
+          # 1. It finds the "Latest Version" field and updates its text.
+          # 2. It finds the "Changelog" tab and prepends the new changelog entry to its list of views.
+          # It also handles the case where the changelog was empty or had the placeholder text.
+          jq --arg version "$VERSION" \
+             --argjson newEntry "$NEW_CHANGELOG_ENTRY" \
+             '
+               (.tabs[] | select(.tabname == "Details").views[] | select(.class == "DepictionTableTextView" and .title == "Latest Version").text) = $version |
+               (.tabs[] | select(.tabname == "Changelog").views) |= (if .[0].markdown | contains("No changelog information available") then $newEntry else $newEntry + . end)
+             ' \
+             repo/sileo-depiction.json > repo/sileo-depiction.json.tmp && mv repo/sileo-depiction.json.tmp repo/sileo-depiction.json
+          
+          echo "sileo-depiction.json has been updated."
+          
+      - name: Update APT Repository Files
+        uses: docker://debian:stable-slim
+        with:
+          entrypoint: /bin/bash
+          args: -c " \
+            set -e && \
+            apt-get update && apt-get install -y dpkg-dev bzip2 && \
+            cd /github/workspace/repo && \
+            echo '--- Generating Packages file ---' && \
+            dpkg-scanpackages --multiversion . > Packages && \
+            echo '--- Compressing Packages file ---' && \
+            bzip2 -k -f Packages && \
+            echo '--- Generating Release file ---' && \
+            apt-ftparchive release . > Release && \
+            echo '--- Repository update complete ---'"
+
+      - name: Commit and Push to gh-pages
+        run: |
+          cd repo
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to the repository. Nothing to commit."
+          else
+            git add .
+            git commit -m "Update APT repo and depiction for release ${{ github.event.release.tag_name }}"
+            git push
+            echo "Successfully updated and pushed to the APT repository."
+          fi
