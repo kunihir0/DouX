@@ -100,15 +100,41 @@ jobs:
         run: |
           echo "Building BHTikTok++ tweak..."
           export THEOS=/opt/theos
+          
+          # Build release version (optimized, stripped)
+          echo "Building release package..."
           make clean
           
           # Build release version (optimized, stripped)
           echo "Building release package..."
           make package FINALPACKAGE=1
+          
+          # Move release package to safe location
+          mkdir -p build-artifacts
+          if ls packages/*.deb 1> /dev/null 2>&1; then
+            cp packages/*.deb build-artifacts/release.deb
+            echo "Release package saved as build-artifacts/release.deb"
+          fi
 
           # Build debug version (with debug symbols)
           echo "Building debug package..."
+          make clean
           make package DEBUG=1
+          
+          # Move debug package to safe location
+          if ls packages/*.deb 1> /dev/null 2>&1; then
+            cp packages/*.deb build-artifacts/debug.deb
+            echo "Debug package saved as build-artifacts/debug.deb"
+          fi
+          
+          # Move both packages back to packages directory with clear names
+          mkdir -p packages
+          if [[ -f "build-artifacts/release.deb" ]]; then
+            cp build-artifacts/release.deb packages/release.deb
+          fi
+          if [[ -f "build-artifacts/debug.deb" ]]; then
+            cp build-artifacts/debug.deb packages/debug.deb
+          fi
           
       - name: List build artifacts
         run: |
@@ -123,25 +149,35 @@ jobs:
           CLEAN_VERSION=${VERSION#v}
           
           # Find the generated .deb files
-          DEB_FILES=($(find packages -name "*.deb" -type f))
+          echo "Looking for .deb files..."
+          find packages -name "*.deb" -type f | sort
           
-          if [[ ${#DEB_FILES[@]} -eq 0 ]]; then
-            echo "ERROR: No .deb files found!"
-            exit 1
+          # Check for our specifically named files
+          RELEASE_DEB_FILE=""
+          DEBUG_DEB_FILE=""
+          
+          if [[ -f "packages/release.deb" ]]; then
+            RELEASE_DEB_FILE="packages/release.deb"
+            echo "Found release package: $RELEASE_DEB_FILE"
           fi
           
-          # Sort files to ensure consistent ordering
-          IFS=$'\n' DEB_FILES=($(sort <<<"${DEB_FILES[*]}"))
+          if [[ -f "packages/debug.deb" ]]; then
+            DEBUG_DEB_FILE="packages/debug.deb"
+            echo "Found debug package: $DEBUG_DEB_FILE"
+          fi
           
-          # The last built package should be the debug version
-          DEBUG_DEB_FILE="${DEB_FILES[-1]}"
-          # The first should be the release version (if we have 2)
-          if [[ ${#DEB_FILES[@]} -eq 2 ]]; then
-            RELEASE_DEB_FILE="${DEB_FILES[0]}"
-          else
-            # If only one file, assume it's release
-            RELEASE_DEB_FILE="${DEB_FILES[0]}"
-            DEBUG_DEB_FILE=""
+          # If we don't have our named files, fall back to discovery
+          if [[ -z "$RELEASE_DEB_FILE" ]]; then
+            DEB_FILES=($(find packages -name "*.deb" -type f | sort))
+            if [[ ${#DEB_FILES[@]} -gt 0 ]]; then
+              RELEASE_DEB_FILE="${DEB_FILES[0]}"
+              echo "Using fallback release package: $RELEASE_DEB_FILE"
+            fi
+          fi
+          
+          if [[ -z "$RELEASE_DEB_FILE" ]]; then
+            echo "ERROR: No .deb files found!"
+            exit 1
           fi
           
           # Rename release package
@@ -154,10 +190,13 @@ jobs:
           fi
           
           # Rename debug package if it exists
-          if [[ -f "$DEBUG_DEB_FILE" ]]; then
+          if [[ -n "$DEBUG_DEB_FILE" && -f "$DEBUG_DEB_FILE" ]]; then
             DEBUG_DEB_NAME="BHTikTok++-${CLEAN_VERSION}-debug.deb"
             cp "$DEBUG_DEB_FILE" "$DEBUG_DEB_NAME"
             echo "DEBUG_DEB_FILE=$DEBUG_DEB_NAME" >> $GITHUB_OUTPUT
+            echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
+            ls -la "$DEBUG_DEB_NAME"
+          fi
             echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
             ls -la "$DEBUG_DEB_NAME"
           fi
@@ -207,6 +246,8 @@ jobs:
           files: |
             ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
           body_path: release_notes.md
           generate_release_notes: true
@@ -222,6 +263,8 @@ jobs:
           path: |
             ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
             release_notes.md
           retention-days: 30
@@ -235,9 +278,19 @@ jobs:
           if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
             echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
           fi
+          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
+            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "**Source Archive:** ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
+            echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Source Archive**: Complete source code archive" >> $GITHUB_STEP_SUMMARY
+          echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
           echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
           if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
             echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
