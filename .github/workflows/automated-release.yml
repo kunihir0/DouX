@@ -104,17 +104,21 @@ jobs:
           # Build release version (optimized, stripped)
           echo "Building release package..."
           make clean
-          
-          # Build release version (optimized, stripped)
-          echo "Building release package..."
           make package FINALPACKAGE=1
           
           # Move release package to safe location
           mkdir -p build-artifacts
           if ls packages/*.deb 1> /dev/null 2>&1; then
-            cp packages/*.deb build-artifacts/release.deb
+            # Find and copy the release package
+            RELEASE_PKG=$(find packages -name "*.deb" -type f | head -1)
+            cp "$RELEASE_PKG" build-artifacts/release.deb
             echo "Release package saved as build-artifacts/release.deb"
+            ls -la "$RELEASE_PKG"
           fi
+
+          # Clear packages directory before debug build
+          rm -rf packages
+          mkdir -p packages
 
           # Build debug version (with debug symbols)
           echo "Building debug package..."
@@ -123,17 +127,23 @@ jobs:
           
           # Move debug package to safe location
           if ls packages/*.deb 1> /dev/null 2>&1; then
-            cp packages/*.deb build-artifacts/debug.deb
+            # Find and copy the debug package
+            DEBUG_PKG=$(find packages -name "*.deb" -type f | head -1)
+            cp "$DEBUG_PKG" build-artifacts/debug.deb
             echo "Debug package saved as build-artifacts/debug.deb"
+            ls -la "$DEBUG_PKG"
           fi
           
-          # Move both packages back to packages directory with clear names
+          # Clear packages directory and restore both packages with clear names
+          rm -rf packages
           mkdir -p packages
           if [[ -f "build-artifacts/release.deb" ]]; then
             cp build-artifacts/release.deb packages/release.deb
+            echo "Restored release package to packages/release.deb"
           fi
           if [[ -f "build-artifacts/debug.deb" ]]; then
             cp build-artifacts/debug.deb packages/debug.deb
+            echo "Restored debug package to packages/debug.deb"
           fi
           
       - name: List build artifacts
