@@ -101,7 +101,14 @@ jobs:
           echo "Building BHTikTok++ tweak..."
           export THEOS=/opt/theos
           make clean
+          
+          # Build release version (optimized, stripped)
+          echo "Building release package..."
           make package FINALPACKAGE=1
+
+          # Build debug version (with debug symbols)
+          echo "Building debug package..."
+          make package DEBUG=1
           
       - name: List build artifacts
         run: |
@@ -115,19 +122,44 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           CLEAN_VERSION=${VERSION#v}
           
-          # Find the generated .deb file
-          DEB_FILE=$(find packages -name "*.deb" -type f | head -1)
+          # Find the generated .deb files
+          DEB_FILES=($(find packages -name "*.deb" -type f))
           
-          if [[ -f "$DEB_FILE" ]]; then
-            # Rename to include version
-            NEW_DEB_NAME="BHTikTok++-${CLEAN_VERSION}.deb"
-            cp "$DEB_FILE" "$NEW_DEB_NAME"
-            echo "DEB_FILE=$NEW_DEB_NAME" >> $GITHUB_OUTPUT
-            echo "Found and renamed .deb file: $NEW_DEB_NAME"
-            ls -la "$NEW_DEB_NAME"
-          else
-            echo "ERROR: No .deb file found!"
+          if [[ ${#DEB_FILES[@]} -eq 0 ]]; then
+            echo "ERROR: No .deb files found!"
             exit 1
+          fi
+          
+          # Sort files to ensure consistent ordering
+          IFS=$'\n' DEB_FILES=($(sort <<<"${DEB_FILES[*]}"))
+          
+          # The last built package should be the debug version
+          DEBUG_DEB_FILE="${DEB_FILES[-1]}"
+          # The first should be the release version (if we have 2)
+          if [[ ${#DEB_FILES[@]} -eq 2 ]]; then
+            RELEASE_DEB_FILE="${DEB_FILES[0]}"
+          else
+            # If only one file, assume it's release
+            RELEASE_DEB_FILE="${DEB_FILES[0]}"
+            DEBUG_DEB_FILE=""
+          fi
+          
+          # Rename release package
+          if [[ -f "$RELEASE_DEB_FILE" ]]; then
+            RELEASE_DEB_NAME="BHTikTok++-${CLEAN_VERSION}.deb"
+            cp "$RELEASE_DEB_FILE" "$RELEASE_DEB_NAME"
+            echo "RELEASE_DEB_FILE=$RELEASE_DEB_NAME" >> $GITHUB_OUTPUT
+            echo "Found and renamed release .deb file: $RELEASE_DEB_NAME"
+            ls -la "$RELEASE_DEB_NAME"
+          fi
+          
+          # Rename debug package if it exists
+          if [[ -f "$DEBUG_DEB_FILE" ]]; then
+            DEBUG_DEB_NAME="BHTikTok++-${CLEAN_VERSION}-debug.deb"
+            cp "$DEBUG_DEB_FILE" "$DEBUG_DEB_NAME"
+            echo "DEBUG_DEB_FILE=$DEBUG_DEB_NAME" >> $GITHUB_OUTPUT
+            echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
+            ls -la "$DEBUG_DEB_NAME"
           fi
           
           # Create source archive (excluding build artifacts)
@@ -173,7 +205,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            ${{ steps.prepare_assets.outputs.DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
           body_path: release_notes.md
           generate_release_notes: true
@@ -187,7 +220,8 @@ jobs:
         with:
           name: BHTikTok++-${{ steps.get_version.outputs.VERSION }}
           path: |
-            ${{ steps.prepare_assets.outputs.DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
+            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
             release_notes.md
           retention-days: 30
@@ -197,10 +231,16 @@ jobs:
           echo "## ✅ BHTikTok++ Release Build Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Debian Package:** ${{ steps.prepare_assets.outputs.DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
+            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "**Source Archive:** ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
-          echo "- Ready-to-install .deb package for jailbroken iOS devices" >> $GITHUB_STEP_SUMMARY
-          echo "- Complete source code archive" >> $GITHUB_STEP_SUMMARY
-          echo "- Automated changelog generation" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
+          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
+            echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "- **Source Archive**: Complete source code archive" >> $GITHUB_STEP_SUMMARY
+          echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
