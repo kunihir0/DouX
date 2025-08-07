@@ -1,8 +1,6 @@
 name: Automated Release
 
 on:
-  release:
-    types: [published]
   push:
     tags:
       - 'v*.*.*'
@@ -12,401 +10,142 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
-      packages: write
-      
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+      changelog_path: ${{ steps.changelog.outputs.changelog_path }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: recursive
-        
+
       - name: Get version from tag
         id: get_version
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION="dev-$(git rev-parse --short HEAD)"
-          fi
-          echo "Raw version from ref: $VERSION"
+          VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building BHTikTok++ version: $VERSION"
-        
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.2'
-          
-      - name: Accept Xcode License
-        run: sudo xcodebuild -license accept
-        
-      - name: Install Theos
+
+      - name: Setup Environment (Xcode, Theos, SDK)
         run: |
-          echo "Installing Theos..."
-          # Install Theos to /opt/theos instead of default location
-          sudo mkdir -p /opt/theos
-          sudo chown -R $(whoami) /opt/theos
-          
-          # Clone Theos manually for more control
+          # Setup Xcode
+          xcode-select -s /Applications/Xcode_15.2.app
+          sudo xcodebuild -license accept
+          # Install Theos & Dependencies
+          sudo mkdir -p /opt/theos && sudo chown -R $(whoami) /opt/theos
           git clone --recursive https://github.com/theos/theos.git /opt/theos
-          
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
-          
-          # Install required dependencies
           brew install ldid xz
-          
-      - name: Install iOS SDK
-        run: |
-          echo "Installing iOS SDK..."
+          # Install SDK
           mkdir -p /opt/theos/sdks
-          cd /opt/theos/sdks
-          
-          # Download iOS 16.5 SDK
-          echo "Downloading iOS 16.5 SDK..."
-          curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
-          
-          # Extract the SDK
-          echo "Extracting iOS SDK..."
-          tar -xf iPhoneOS16.5.sdk.tar.xz
-          
-          # Clean up the archive
-          rm iPhoneOS16.5.sdk.tar.xz
-          
-          # Verify SDK installation
-          echo "Installed SDKs:"
-          ls -la /opt/theos/sdks/
-          
-      - name: Verify Theos Installation
-        run: |
-          echo "Verifying Theos installation..."
-          echo "THEOS path: $THEOS"
-          echo "Theos directory contents:"
-          ls -la $THEOS/
-          echo "Available iOS SDKs:"
-          ls -la $THEOS/sdks/
-          echo "Makefiles directory:"
-          ls -la $THEOS/makefiles/ | head -10
-          
+          curl -L -o sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
+          tar -xf sdk.tar.xz -C /opt/theos/sdks/ && rm sdk.tar.xz
+
       - name: Update version in control file
         run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Remove 'v' prefix if present for control file
-          CLEAN_VERSION=${VERSION#v}
-          echo "Updating control file with version: $CLEAN_VERSION"
-          sed -i.bak "s/^Version:.*/Version: $CLEAN_VERSION/" control
-          cat control
-          
-      - name: Clean and build tweak
-        run: |
-          echo "Building BHTikTok++ tweak..."
-          export THEOS=/opt/theos
-          
-          # Build release version (optimized, stripped)
-          echo "Building release package..."
-          make clean
-          make package FINALPACKAGE=1
-          
-          # Move release package to safe location
-          mkdir -p build-artifacts
-          if ls packages/*.deb 1> /dev/null 2>&1; then
-            # Find and copy the release package
-            RELEASE_PKG=$(find packages -name "*.deb" -type f | head -1)
-            cp "$RELEASE_PKG" build-artifacts/release.deb
-            echo "Release package saved as build-artifacts/release.deb"
-            ls -la "$RELEASE_PKG"
-          fi
+          # ✅ CORRECTED STEP
+          # Assign the version from the previous step to a shell variable
+          VERSION_TAG="${{ steps.get_version.outputs.VERSION }}"
+          # Use shell parameter expansion to remove the 'v' prefix and update the file
+          sed -i.bak "s/^Version:.*/Version: ${VERSION_TAG#v}/" control
 
-          # Clear packages directory before debug build
-          rm -rf packages
-          mkdir -p packages
+      - name: Build Tweak
+        id: build
+        run: |
+          make clean package FINALPACKAGE=1
+          DEB_FILE=$(find packages -name "*.deb")
+          echo "deb_path=$DEB_FILE" >> $GITHUB_OUTPUT
 
-          # Build debug version (with debug symbols)
-          echo "Building debug package..."
-          make clean
-          make package DEBUG=1
-          
-          # Move debug package to safe location
-          if ls packages/*.deb 1> /dev/null 2>&1; then
-            # Find and copy the debug package
-            DEBUG_PKG=$(find packages -name "*.deb" -type f | head -1)
-            cp "$DEBUG_PKG" build-artifacts/debug.deb
-            echo "Debug package saved as build-artifacts/debug.deb"
-            ls -la "$DEBUG_PKG"
-          fi
-          
-          # Clear packages directory and restore both packages with clear names
-          rm -rf packages
-          mkdir -p packages
-          if [[ -f "build-artifacts/release.deb" ]]; then
-            cp build-artifacts/release.deb packages/release.deb
-            echo "Restored release package to packages/release.deb"
-          fi
-          if [[ -f "build-artifacts/debug.deb" ]]; then
-            cp build-artifacts/debug.deb packages/debug.deb
-            echo "Restored debug package to packages/debug.deb"
-          fi
-          
-      - name: List build artifacts
-        run: |
-          echo "Build completed. Listing artifacts..."
-          find . -name "*.deb" -type f
-          ls -la packages/ || echo "No packages directory found"
-          
-      - name: Prepare release assets
-        id: prepare_assets
-        run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Clean version string - remove 'v' prefix and any leading dots
-          CLEAN_VERSION=${VERSION#v}
-          CLEAN_VERSION=${CLEAN_VERSION#.}
-          
-          echo "Original version: $VERSION"
-          echo "Cleaned version: $CLEAN_VERSION"
-          
-          # Find the generated .deb files
-          echo "Looking for .deb files..."
-          find packages -name "*.deb" -type f | sort
-          
-          # Check for our specifically named files
-          RELEASE_DEB_FILE=""
-          DEBUG_DEB_FILE=""
-          
-          if [[ -f "packages/release.deb" ]]; then
-            RELEASE_DEB_FILE="packages/release.deb"
-            echo "Found release package: $RELEASE_DEB_FILE"
-          fi
-          
-          if [[ -f "packages/debug.deb" ]]; then
-            DEBUG_DEB_FILE="packages/debug.deb"
-            echo "Found debug package: $DEBUG_DEB_FILE"
-          fi
-          
-          # If we don't have our named files, fall back to discovery
-          if [[ -z "$RELEASE_DEB_FILE" ]]; then
-            DEB_FILES=($(find packages -name "*.deb" -type f | sort))
-            if [[ ${#DEB_FILES[@]} -gt 0 ]]; then
-              RELEASE_DEB_FILE="${DEB_FILES[0]}"
-              echo "Using fallback release package: $RELEASE_DEB_FILE"
-            fi
-          fi
-          
-          if [[ -z "$RELEASE_DEB_FILE" ]]; then
-            echo "ERROR: No .deb files found!"
-            exit 1
-          fi
-          
-          # Rename release package
-          if [[ -f "$RELEASE_DEB_FILE" ]]; then
-            RELEASE_DEB_NAME="BHTikTok++-${CLEAN_VERSION}.deb"
-            cp "$RELEASE_DEB_FILE" "$RELEASE_DEB_NAME"
-            echo "RELEASE_DEB_FILE=$RELEASE_DEB_NAME" >> $GITHUB_OUTPUT
-            echo "Found and renamed release .deb file: $RELEASE_DEB_NAME"
-            ls -la "$RELEASE_DEB_NAME"
-          fi
-          
-          # Rename debug package if it exists
-          if [[ -n "$DEBUG_DEB_FILE" && -f "$DEBUG_DEB_FILE" ]]; then
-            DEBUG_DEB_NAME="BHTikTok++-${CLEAN_VERSION}-debug.deb"
-            cp "$DEBUG_DEB_FILE" "$DEBUG_DEB_NAME"
-            echo "DEBUG_DEB_FILE=$DEBUG_DEB_NAME" >> $GITHUB_OUTPUT
-            echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
-            ls -la "$DEBUG_DEB_NAME"
-          fi
-          
       - name: Generate changelog
         id: changelog
         run: |
-          VERSION=${{ steps.get_version.outputs.VERSION }}
-          echo "Generating changelog for version $VERSION"
-          
-          # Try to get changelog from tag message or recent commits
-          if git tag -l --format='%(contents)' "$VERSION" | head -1 | grep -q .; then
-            CHANGELOG=$(git tag -l --format='%(contents)' "$VERSION")
-          else
-            echo "## Changes in $VERSION" > changelog.md
-            echo "" >> changelog.md
-            
-            # Get commits since last tag
-            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-            if [[ -n "$PREV_TAG" ]]; then
-              echo "### Commits since $PREV_TAG:" >> changelog.md
-              git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" >> changelog.md
-            else
-              echo "### Recent commits:" >> changelog.md
-              git log --pretty=format:"- %s (%h)" -10 >> changelog.md
-            fi
-            
-            CHANGELOG=$(cat changelog.md)
+          # Generates a changelog from commits since the last tag
+          CHANGELOG_BODY=$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+          if [ -z "$CHANGELOG_BODY" ]; then
+            CHANGELOG_BODY="No changes listed for this version."
           fi
-          
-          # Save changelog to file for release notes
-          echo "$CHANGELOG" > release_notes.md
-          echo "Generated changelog:"
-          cat release_notes.md
-          
-      - name: Upload release assets
+          echo "$CHANGELOG_BODY" > release_notes.md
+          echo "changelog_path=release_notes.md" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: |
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-          body_path: release_notes.md
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Upload build artifacts
+          files: ${{ steps.build.outputs.deb_path }}
+          body_path: ${{ steps.changelog.outputs.changelog_path }}
+
+      - name: Upload build artifact for next job
         uses: actions/upload-artifact@v4
         with:
-          name: BHTikTok++-${{ steps.get_version.outputs.VERSION }}
+          name: release-assets
           path: |
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            release_notes.md
-          retention-days: 30
-          
-      - name: Build summary
-        run: |
-          echo "## ✅ BHTikTok++ Release Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Source Code**: Available as GitHub's automatic zip/tar.gz downloads" >> $GITHUB_STEP_SUMMARY
-          echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
+            ${{ steps.build.outputs.deb_path }}
+            ${{ steps.changelog.outputs.changelog_path }}
 
   update-apt-repo:
     needs: build-and-release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
-      contents: write # Required to push changes to the gh-pages branch
-      
+      contents: write
+
     steps:
       - name: Checkout gh-pages Branch
         uses: actions/checkout@v4
         with:
-          ref: 'gh-pages' # We are working on the gh-pages branch
-          path: 'repo'      # Checkout into a subdirectory named 'repo' to keep things clean
+          ref: 'gh-pages'
+          path: 'repo'
 
-      - name: Get Release Info
-        id: release_info
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: build-artifact
+      
+      - name: Update Sileo Depiction and move .deb
         run: |
-          echo "Release assets found:"
-          echo "${{ toJSON(github.event.release.assets) }}" | jq -r '.[] | .name'
+          DEB_FILE=$(find build-artifact -name "*.deb")
+          CHANGELOG_FILE=$(find build-artifact -name "release_notes.md")
+          VERSION=$(echo "${{ needs.build-and-release.outputs.version }}" | sed 's/^v//')
           
-          # Look for the main release .deb file (not debug)
-          DEB_URL=$(echo "${{ toJSON(github.event.release.assets) }}" | jq -r '.[] | select(.name | endswith(".deb") and (contains("debug") | not)) | .browser_download_url')
-          
-          if [ -z "$DEB_URL" ]; then
-            echo "No release .deb file found in the published release assets."
-            echo "Available assets:"
-            echo "${{ toJSON(github.event.release.assets) }}" | jq -r '.[] | "- " + .name'
-            exit 1
-          fi
-          
-          echo "Using .deb file: $DEB_URL"
-          echo "deb_url=$DEB_URL" >> $GITHUB_OUTPUT
-
-      - name: Download .deb from Release
-        run: |
-          echo "Downloading .deb from ${{ steps.release_info.outputs.deb_url }}"
+          echo "Moving $DEB_FILE to repo/debs/"
           mkdir -p repo/debs
-          curl -L "${{ steps.release_info.outputs.deb_url }}" -o "repo/debs/$(basename "${{ steps.release_info.outputs.deb_url }}")"
+          mv "$DEB_FILE" repo/debs/
 
-      - name: Update Sileo Depiction File
-        run: |
-          if [ -f "repo/sileo-depiction.json" ] && [ -s "repo/sileo-depiction.json" ]; then
-            echo "Updating sileo-depiction.json with the latest changelog..."
-            # Store release body and version in variables
-            # The 'jq -R -s' command wraps the string in quotes and escapes characters to make it a valid JSON string.
-            CHANGELOG_BODY=$(echo "${{ github.event.release.body }}" | jq -R -s '.')
-            VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
+          if [ -f "repo/sileo-depiction.json" ]; then
+            echo "Updating sileo-depiction.json..."
+            CHANGELOG_BODY=$(cat "$CHANGELOG_FILE")
 
-            # Create the new changelog entry as a JSON object. This will be a header + markdown text.
             NEW_CHANGELOG_ENTRY=$(jq -n \
               --arg version "$VERSION" \
-              --arg markdown "${{ github.event.release.body }}" \
+              --arg markdown "$CHANGELOG_BODY" \
               '[
                 { "class": "DepictionSubheaderView", "title": ("Version " + $version) },
                 { "class": "DepictionMarkdownView", "markdown": $markdown },
                 { "class": "DepictionSeparatorView" }
               ]')
             
-            # Use jq to update the JSON file.
-            # 1. It finds the "Latest Version" field and updates its text.
-            # 2. It finds the "Changelog" tab and prepends the new changelog entry to its list of views.
-            # It also handles the case where the changelog was empty or had the placeholder text.
-            jq --arg version "$VERSION" \
-               --argjson newEntry "$NEW_CHANGELOG_ENTRY" \
-               '
-                 (.tabs[] | select(.tabname == "Details").views[] | select(.class == "DepictionTableTextView" and .title == "Latest Version").text) = $version |
-                 (.tabs[] | select(.tabname == "Changelog").views) |= (if .[0].markdown | contains("No changelog information available") then $newEntry else $newEntry + . end)
-               ' \
-               repo/sileo-depiction.json > repo/sileo-depiction.json.tmp && mv repo/sileo-depiction.json.tmp repo/sileo-depiction.json
-            
-            echo "sileo-depiction.json has been updated."
-          else
-            echo "sileo-depiction.json not found or empty, skipping update."
+            jq --arg version "$VERSION" --argjson newEntry "$NEW_CHANGELOG_ENTRY" \
+               '(.tabs[] | select(.tabname == "Details").views[] | select(.class == "DepictionTableTextView" and .title == "Latest Version").text) = $version |
+                (.tabs[] | select(.tabname == "Changelog").views) |= ($newEntry + .)' \
+               repo/sileo-depiction.json > tmp.json && mv tmp.json repo/sileo-depiction.json
           fi
-          
-      - name: Update APT Repository Files
-        uses: docker://debian:stable-slim
-        with:
-          entrypoint: /bin/bash
-          args: -c " \
-            set -e && \
-            apt-get update && apt-get install -y dpkg-dev bzip2 && \
-            cd /github/workspace/repo && \
-            echo '--- Generating Packages file ---' && \
-            dpkg-scanpackages --multiversion . > Packages && \
-            echo '--- Compressing Packages file ---' && \
-            bzip2 -k -f Packages && \
-            echo '--- Generating Release file ---' && \
-            apt-ftparchive release . > Release && \
-            echo '--- Repository update complete ---'"
 
+      - name: Update APT Repository Files
+        run: |
+          cd repo
+          dpkg-scanpackages --multiversion . > Packages
+          bzip2 -k -f Packages
+          apt-ftparchive release . > Release
+      
       - name: Commit and Push to gh-pages
         run: |
           cd repo
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "github-actions@github.com"
-          
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          git add .
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to the repository. Nothing to commit."
           else
-            git add .
-            git commit -m "Update APT repo and depiction for release ${{ github.event.release.tag_name }}"
+            git commit -m "Update APT repo for release ${{ needs.build-and-release.outputs.version }}"
             git push
-            echo "Successfully updated and pushed to the APT repository."
           fi
-
-      - name: APT Update Summary
-        run: |
-          echo "## 📦 APT Repository Updated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release:** ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** Downloaded and added to repository" >> $GITHUB_STEP_SUMMARY
-          echo "**Sileo Depiction:** Updated with latest changelog" >> $GITHUB_STEP_SUMMARY
-          echo "**Repository Files:** Packages and Release files regenerated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🌐 Repository Access:" >> $GITHUB_STEP_SUMMARY
-          echo "- APT repository updated on gh-pages branch" >> $GITHUB_STEP_SUMMARY
-          echo "- Sileo depiction includes latest version info" >> $GITHUB_STEP_SUMMARY
-          echo "- Users can now install the latest version via package managers" >> $GITHUB_STEP_SUMMARY
