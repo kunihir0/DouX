@@ -207,9 +207,6 @@ jobs:
             echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
             ls -la "$DEBUG_DEB_NAME"
           fi
-            echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
-            ls -la "$DEBUG_DEB_NAME"
-          fi
           
           # Create source archive (excluding build artifacts)
           echo "Creating source archive..."
