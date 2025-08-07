@@ -29,6 +29,7 @@ jobs:
           else
             VERSION="dev-$(git rev-parse --short HEAD)"
           fi
+          echo "Raw version from ref: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Building BHTikTok++ version: $VERSION"
         
@@ -156,7 +157,12 @@ jobs:
         id: prepare_assets
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Clean version string - remove 'v' prefix and any leading dots
           CLEAN_VERSION=${VERSION#v}
+          CLEAN_VERSION=${CLEAN_VERSION#.}
+          
+          echo "Original version: $VERSION"
+          echo "Cleaned version: $CLEAN_VERSION"
           
           # Find the generated .deb files
           echo "Looking for .deb files..."
@@ -208,13 +214,6 @@ jobs:
             ls -la "$DEBUG_DEB_NAME"
           fi
           
-          # Create source archive (excluding build artifacts)
-          echo "Creating source archive..."
-          zip -r BHTikTok++-${CLEAN_VERSION}-source.zip . \
-            -x ".git/*" ".github/*" "packages/*" ".theos/*" "*.deb" \
-               "obj/*" ".DS_Store" "*.bak"
-          echo "SOURCE_ZIP=BHTikTok++-${CLEAN_VERSION}-source.zip" >> $GITHUB_OUTPUT
-          
       - name: Generate changelog
         id: changelog
         run: |
@@ -253,9 +252,6 @@ jobs:
           files: |
             ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
           body_path: release_notes.md
           generate_release_notes: true
           draft: false
@@ -270,9 +266,6 @@ jobs:
           path: |
             ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
             ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}
             release_notes.md
           retention-days: 30
           
@@ -289,18 +282,11 @@ jobs:
           if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
             echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "**Source Archive:** ${{ steps.prepare_assets.outputs.SOURCE_ZIP }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
           echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
           if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
             echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "- **Source Archive**: Complete source code archive" >> $GITHUB_STEP_SUMMARY
-          echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Source Archive**: Complete source code archive" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source Code**: Available as GitHub's automatic zip/tar.gz downloads" >> $GITHUB_STEP_SUMMARY
           echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
