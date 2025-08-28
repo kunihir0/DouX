@@ -51,14 +51,11 @@ jobs:
           sudo chown -R $(whoami) /opt/theos
           
           echo "Installing Theos to /opt/theos..."
-          # The installer script will use this path if THEOS is set
           export THEOS=/opt/theos
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
           
-          # Use the Roothide installer script
           git clone --recursive https://github.com/roothide/theos.git /opt/theos
           
-          # Install required dependencies for Theos
           brew install ldid xz
           
       - name: Install iOS SDK
@@ -80,7 +77,6 @@ jobs:
       - name: Update version in control file
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Remove 'v' prefix for the control file version
           CLEAN_VERSION=${VERSION#v}
           echo "Updating control file with version: $CLEAN_VERSION"
           sed -i.bak "s/^Version:.*/Version: $CLEAN_VERSION/" control
@@ -95,7 +91,7 @@ jobs:
           ORIG_CONTROL=$(cat control)
           BASE_PKG_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
 
-          # Build release version (optimized, stripped)
+          # Build release version
           echo "Building release package for ${{ matrix.scheme }}..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
@@ -110,7 +106,7 @@ jobs:
           fi
           echo "$ORIG_CONTROL" > control
 
-          # Build debug version (with debug symbols)
+          # Build debug version
           echo "Building debug package for ${{ matrix.scheme }}..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}-debug/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
@@ -138,13 +134,13 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
-      contents: write # Required to create a release
+      contents: write
       
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Needed for changelog generation
+          fetch-depth: 0
 
       - name: Get version from tag
         id: get_version
@@ -199,10 +195,8 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Generating changelog for version $VERSION"
           
-          # Try to get changelog from annotated tag message
           CHANGELOG=$(git tag -l --format='%(contents)' "$VERSION")
           
-          # If tag message is empty, generate from commit history
           if [ -z "$CHANGELOG" ]; then
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [[ -n "$PREV_TAG" ]]; then
@@ -243,63 +237,60 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
-      contents: read # Only needs read permission for the current repo
+      contents: read
 
     steps:
-      # Step 1: Checkout the gh-pages branch from the external APT repository.
-      # This requires a Personal Access Token (PAT) with 'repo' scope, stored as a secret named GH_PAT.
       - name: Checkout External APT Repo (gh-pages)
         uses: actions/checkout@v4
         with:
-          repository: 'kunihir0/WattMaster' # The external repo to update
-          ref: 'gh-pages'                  # The branch containing the APT repo
-          path: 'apt-repo'                 # The local directory to clone into
-          token: ${{ secrets.GH_PAT }}     # The PAT for authentication
+          repository: 'kunihir0/WattMaster'
+          ref: 'gh-pages'
+          path: 'apt-repo'
+          token: ${{ secrets.GH_PAT }}
 
-      # Step 2: Get the URLs of the .deb files from the release created in the previous job.
+      # Step 2: Get the URLs and correct filenames of the .deb files from the release.
       - name: Get Release Info
         id: release_info
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Fetching release info for tag: $TAG_NAME"
           
-          # Use GitHub API to get release data
           RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
             
-          # Extract all .deb file URLs from the release assets
-          DEB_URLS=$(echo "$RELEASE_DATA" | jq -r '.assets[] | select(.name | endswith(".deb")) | .browser_download_url')
+          # Get a JSON array of objects, each containing the correct name and the download URL
+          DEB_INFO=$(echo "$RELEASE_DATA" | jq -c '[.assets[] | select(.name | endswith(".deb")) | {name: .name, url: .browser_download_url}]')
           
-          if [ -z "$DEB_URLS" ]; then
+          if [ -z "$DEB_INFO" ] || [ "$DEB_INFO" == "[]" ]; then
             echo "No .deb files found in the release assets for this tweak."
             exit 1
           fi
 
-          # Pass the URLs to the next step
-          echo "deb_urls<<DEB_URLS_EOF" >> $GITHUB_OUTPUT
-          echo "$DEB_URLS" >> $GITHUB_OUTPUT
-          echo "DEB_URLS_EOF" >> $GITHUB_OUTPUT
+          # Pass the JSON array to the next step
+          echo "deb_info=$DEB_INFO" >> $GITHUB_OUTPUT
 
-      # Step 3: Download the .deb files into the 'debs' folder of the cloned external repo.
+      # Step 3: Download the .deb files using their correct names into the cloned external repo.
       - name: Download new .deb files into APT repo
         run: |
           echo "Downloading new .deb files..."
-          # Ensure the 'debs' directory exists
           mkdir -p apt-repo/debs
           
-          # Loop through the URLs and download each file
-          while read -r url; do
-            if [ -n "$url" ]; then
-              echo "Downloading $url"
-              curl -L "$url" -o "apt-repo/debs/$(basename "$url")"
+          # Parse the JSON array and loop through each object
+          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb; do
+            # Extract the name and url from the JSON object
+            NAME=$(echo "$deb" | jq -r '.name')
+            URL=$(echo "$deb" | jq -r '.url')
+            
+            if [ -n "$URL" ]; then
+              echo "Downloading $NAME"
+              # Use the correct NAME for the output file
+              curl -L "$URL" -o "apt-repo/debs/$NAME"
             fi
-          done <<< "${{ steps.release_info.outputs.deb_urls }}"
+          done
           
           echo "New packages added to apt-repo/debs:"
           ls -l apt-repo/debs
 
-      # Step 4: Regenerate the 'Packages' and 'Release' files to include the new debs.
-      # This uses a Docker container with the necessary APT tools.
       - name: Update APT Repository Index Files
         uses: docker://debian:stable-slim
         with:
@@ -315,30 +306,25 @@ jobs:
             echo 'Generating Release file...' &&
             apt-ftparchive release . > Release"
 
-      # Step 5: Commit the new .deb files and the updated index files back to the external repo.
       - name: Commit and Push to External Repo
         run: |
           cd apt-repo
           git config --global user.name "GitHub Actions"
           git config --global user.email "github-actions@github.com"
           
-          # Check if there are any changes to commit
           if [ -z "$(git status --porcelain)" ]; then
             echo "No changes to the repository. Nothing to commit."
           else
             git add .
             TAG_NAME=${GITHUB_REF#refs/tags/}
-            # Commit with a message indicating which tweak and version was added
             git commit -m "feat: Add ${{ github.repository }}@$TAG_NAME to APT repo"
             
             echo "Pushing changes to kunihir0/WattMaster gh-pages branch..."
-            # The 'actions/checkout' step already configured the remote with the PAT
             git push
             
             echo "Successfully updated the external APT repository."
           fi
 
-      # Step 6: Provide a summary of the action for the workflow run page.
       - name: APT Update Summary
         run: |
           echo "## 📦 External APT Repository Updated" >> $GITHUB_STEP_SUMMARY
