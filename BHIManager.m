@@ -1,7 +1,15 @@
 #import "BHIManager.h"
 #import "TikTokHeaders.h"
+#import <os/log.h>
+
+static os_log_t bhimanager_log;
 
 @implementation BHIManager
+
++ (void)load {
+    bhimanager_log = os_log_create("com.kunihir0.bhtiktok", "BHIManager");
+}
+
 + (BOOL)hideAds {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"hide_ads"];
 }
@@ -187,25 +195,30 @@
     }
     [topMostController() presentViewController:acVC animated:true completion:nil];
 }
-+ (void)saveMedia:(id)newFilePath fileExtension:(id)fileextension {
++ (void)saveMedia:(NSURL *)newFilePath {
+    os_log_info(bhimanager_log, "BHIManager saveMedia called with path: %{public}@", newFilePath.path);
+    NSString *fileextension = newFilePath.pathExtension;
     NSArray *imageExtensions = @[@"png", @"jpg", @"jpeg", @"gif", @"tiff", @"bmp", @"heif", @"heic", @"svg"];
     NSArray *videoExtensions = @[@"mp4", @"mov", @"avi", @"mkv", @"wmv", @"flv", @"webm"];
-    [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-        PHAssetResourceCreationOptions *options = [[PHAssetResourceCreationOptions alloc] init];
-        if ([videoExtensions containsObject:fileextension]) {
-            [[PHAssetCreationRequest creationRequestForAsset] addResourceWithType:PHAssetResourceTypeVideo fileURL:newFilePath options:options];
-        } else if ([imageExtensions containsObject:fileextension]) {
-            [[PHAssetCreationRequest creationRequestForAsset] addResourceWithType:PHAssetResourceTypePhoto fileURL:newFilePath options:options];
+
+    if ([imageExtensions containsObject:fileextension.lowercaseString]) {
+        UIImage *image = [UIImage imageWithContentsOfFile:newFilePath.path];
+        if (image) {
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+            os_log_info(bhimanager_log, "Image saved successfully: %{public}@", newFilePath.path);
         } else {
-            NSLog(@"Unsupported file type: %@", fileextension);
+            os_log_error(bhimanager_log, "Error creating UIImage from file: %{public}@", newFilePath.path);
         }
-    } completionHandler:^(BOOL success, NSError * _Nullable error) {
-        if (success) {
-            NSLog(@"Media saved to Camera Roll successfully.");
+    } else if ([videoExtensions containsObject:fileextension.lowercaseString]) {
+        if (UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(newFilePath.path)) {
+            UISaveVideoAtPathToSavedPhotosAlbum(newFilePath.path, nil, nil, nil);
+            os_log_info(bhimanager_log, "Video saved successfully: %{public}@", newFilePath.path);
         } else {
-            NSLog(@"Error saving media to Camera Roll: %@", error);
+            os_log_error(bhimanager_log, "Video at path is not compatible with Photos album: %{public}@", newFilePath.path);
         }
-    }];
+    } else {
+        os_log_error(bhimanager_log, "Unsupported file type for saving: %{public}@", fileextension);
+    }
 }
 
 + (NSString *)getDownloadingPersent:(float)per {

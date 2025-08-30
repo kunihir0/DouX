@@ -1,4 +1,8 @@
 #import "TikTokHeaders.h"
+#import <os/log.h>
+
+static os_log_t bhtiktok_log;
+static const void *kFeedbackGeneratorKey = &kFeedbackGeneratorKey;
 
 NSArray *jailbreakPaths;
 
@@ -212,9 +216,9 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %new - (void)image:(UIImage *)image didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo {
     if (error) {
-        NSLog(@"Error saving image: %@", error.localizedDescription);
+        os_log_error(bhtiktok_log, "Error saving profile image: %{public}@", error.localizedDescription);
     } else {
-        NSLog(@"Image successfully saved to Photos app");
+        os_log_info(bhtiktok_log, "Profile image successfully saved to Photos app");
     }
 }
 %end
@@ -1062,6 +1066,7 @@ static BOOL isAuthenticationShowed = FALSE;
 %property(nonatomic, assign) BOOL elementsHidden;
 %property (nonatomic, retain) NSString *fileextension;
 %property (nonatomic, retain) UIProgressView *progressView;
+
 - (void)configWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
@@ -1114,6 +1119,10 @@ static BOOL isAuthenticationShowed = FALSE;
     NSURL *downloadableURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://tikwm.com/video/media/hdplay/%@.mp4", as]];
     self.fileextension = [rootVC.model.video.playURL bestURLtoDownloadFormat];
     if (downloadableURL) {
+        UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+        [feedbackGenerator prepare];
+        objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
         BHDownload *dwManager = [[BHDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
@@ -1127,6 +1136,10 @@ static BOOL isAuthenticationShowed = FALSE;
     NSURL *downloadableURL = [rootVC.model.video.playURL bestURLtoDownload];
     self.fileextension = [rootVC.model.video.playURL bestURLtoDownloadFormat];
     if (downloadableURL) {
+        UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+        [feedbackGenerator prepare];
+        objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
         BHDownload *dwManager = [[BHDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
@@ -1140,15 +1153,20 @@ static BOOL isAuthenticationShowed = FALSE;
             NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
             AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:index];
 
-                NSURL *downloadableURL = [currentPhoto.originPhotoURL bestURLtoDownload];
+                os_log_error(bhtiktok_log, "!!!!!! FIRING SINGLE PHOTO DOWNLOAD FOR INDEX %lu !!!!!!", index);
+                os_log_info(bhtiktok_log, "Attempting to get image URL for single download.");
+                NSURL *downloadableURL = [currentPhoto.originPhotoURL bestImageURLtoDownload];
                 self.fileextension = [currentPhoto.originPhotoURL bestURLtoDownloadFormat];
                 if (downloadableURL) {
+                    os_log_info(bhtiktok_log, "Got image URL: %{public}@", downloadableURL);
                     BHDownload *dwManager = [[BHDownload alloc] init];
                     [dwManager downloadFileWithURL:downloadableURL];
                     [dwManager setDelegate:self];
                     self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
                     self.hud.textLabel.text = @"Downloading";
                      [self.hud showInView:topMostController().view];
+                } else {
+                    os_log_error(bhtiktok_log, "Failed to get image URL for single download. URL is nil.");
                 }
             
     }
@@ -1160,14 +1178,19 @@ static BOOL isAuthenticationShowed = FALSE;
             NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
             NSMutableArray<NSURL *> *fileURLs = [NSMutableArray array];
 
+            os_log_info(bhtiktok_log, "Starting 'Download All' for photos.");
             for (AWEPhotoAlbumPhoto *currentPhoto in photos) {
-                NSURL *downloadableURL = [currentPhoto.originPhotoURL bestURLtoDownload];
+                NSURL *downloadableURL = [currentPhoto.originPhotoURL bestImageURLtoDownload];
                 self.fileextension = [currentPhoto.originPhotoURL bestURLtoDownloadFormat];
                 if (downloadableURL) {
+                    os_log_info(bhtiktok_log, "Queued image URL: %{public}@", downloadableURL);
                     [fileURLs addObject:downloadableURL];
+                } else {
+                    os_log_error(bhtiktok_log, "Failed to get an image URL in 'Download All'.");
                 }
             }
 
+            os_log_info(bhtiktok_log, "Total images to download: %lu", (unsigned long)[fileURLs count]);
             BHMultipleDownload *dwManager = [[BHMultipleDownload alloc] init];
             [dwManager setDelegate:self];
             [dwManager downloadFiles:fileURLs];
@@ -1178,7 +1201,7 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %new - (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC {
     NSString *as = rootVC.model.itemID;
-    NSURL *downloadableURL = [rootVC.model.video.playURL bestURLtoDownload];
+    NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
     self.fileextension = @"mp3";
     if (downloadableURL) {
         BHDownload *dwManager = [[BHDownload alloc] init];
@@ -1442,13 +1465,16 @@ static BOOL isAuthenticationShowed = FALSE;
     self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
 }
 %new - (void)downloaderDidFinishDownloadingAllFiles:(NSMutableArray<NSURL *> *)downloadedFilePaths {
+    os_log_info(bhtiktok_log, "'Download All' completed. Saving %lu files.", (unsigned long)[downloadedFilePaths count]);
+    os_log_info(bhtiktok_log, "downloaderDidFinishDownloadingAllFiles called.");
     [self.hud dismiss];
     if ([BHIManager shareSheet]) {
         [BHIManager showSaveVC:downloadedFilePaths];
     }
     else {
+        os_log_info(bhtiktok_log, "Calling saveMedia for %lu files.", (unsigned long)[downloadedFilePaths count]);
         for (NSURL *url in downloadedFilePaths) {
-            [BHIManager saveMedia:url fileExtension:self.fileextension];
+            [BHIManager saveMedia:url];
         }
     }
 }
@@ -1458,7 +1484,17 @@ static BOOL isAuthenticationShowed = FALSE;
     }
 }
 
+%new - (void)downloader:(id)downloader didFinishDownloadingFile:(NSURL *)filePath atIndex:(NSInteger)index totalFiles:(NSInteger)total {
+    os_log_info(bhtiktok_log, "Photo %ld of %ld finished downloading.", (long)index + 1, (long)total);
+    UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+    [generator impactOccurred];
+}
+
 %new - (void)downloadProgress:(float)progress {
+    UISelectionFeedbackGenerator *feedbackGenerator = objc_getAssociatedObject(self, kFeedbackGeneratorKey);
+    if (feedbackGenerator) {
+        [feedbackGenerator selectionChanged];
+    }
     self.progressView.progress = progress;
     self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
     self.hud.tapOutsideBlock = ^(JGProgressHUD * _Nonnull HUD) {
@@ -1467,9 +1503,12 @@ static BOOL isAuthenticationShowed = FALSE;
     };
 }
 %new - (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName {
+    objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    os_log_info(bhtiktok_log, "downloadDidFinish called for single file.");
     NSString *DocPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject;
     NSFileManager *manager = [NSFileManager defaultManager];
     NSURL *newFilePath = [[NSURL fileURLWithPath:DocPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", NSUUID.UUID.UUIDString, self.fileextension]];
+    os_log_info(bhtiktok_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
@@ -1477,10 +1516,15 @@ static BOOL isAuthenticationShowed = FALSE;
         [BHIManager showSaveVC:@[newFilePath]];
     }
     else {
-        [BHIManager saveMedia:newFilePath fileExtension:self.fileextension];
+        os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
+        [BHIManager saveMedia:newFilePath];
     }
+
+    UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+    [generator impactOccurred];
 }
 %new - (void)downloadDidFailureWithError:(NSError *)error {
+    objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if (error) {
         [self.hud dismiss];
     }
@@ -1492,6 +1536,7 @@ static BOOL isAuthenticationShowed = FALSE;
 %property(nonatomic, assign) BOOL elementsHidden;
 %property (nonatomic, retain) UIProgressView *progressView;
 %property (nonatomic, retain) NSString *fileextension;
+
 - (void)configWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
@@ -1535,6 +1580,10 @@ static BOOL isAuthenticationShowed = FALSE;
     NSURL *downloadableURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://tikwm.com/video/media/hdplay/%@.mp4", as]];
     self.fileextension = [rootVC.model.video.playURL bestURLtoDownloadFormat];
     if (downloadableURL) {
+        UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+        [feedbackGenerator prepare];
+        objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
         BHDownload *dwManager = [[BHDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
@@ -1548,6 +1597,10 @@ static BOOL isAuthenticationShowed = FALSE;
     NSURL *downloadableURL = [rootVC.model.video.playURL bestURLtoDownload];
         self.fileextension = [rootVC.model.video.playURL bestURLtoDownloadFormat];
     if (downloadableURL) {
+        UISelectionFeedbackGenerator *feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
+        [feedbackGenerator prepare];
+        objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
         BHDownload *dwManager = [[BHDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
@@ -1558,7 +1611,7 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %new - (void)downloadMusic:(AWEAwemeBaseViewController *)rootVC {
     NSString *as = rootVC.model.itemID;
-    NSURL *downloadableURL = [rootVC.model.video.playURL bestURLtoDownload];
+    NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
         self.fileextension = @"mp3";
     if (downloadableURL) {
         BHDownload *dwManager = [[BHDownload alloc] init];
@@ -1685,6 +1738,10 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 
 %new - (void)downloadProgress:(float)progress {
+    UISelectionFeedbackGenerator *feedbackGenerator = objc_getAssociatedObject(self, kFeedbackGeneratorKey);
+    if (feedbackGenerator) {
+        [feedbackGenerator selectionChanged];
+    }
         self.hud.tapOutsideBlock = ^(JGProgressHUD * _Nonnull HUD) {
         self.hud.textLabel.text = @"Backgrounding ✌️";
         [self.hud dismissAfterDelay:0.4];
@@ -1693,9 +1750,12 @@ static BOOL isAuthenticationShowed = FALSE;
     self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
 }
 %new - (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName {
+    objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    os_log_info(bhtiktok_log, "downloadDidFinish called for single file.");
     NSString *DocPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject;
     NSFileManager *manager = [NSFileManager defaultManager];
     NSURL *newFilePath = [[NSURL fileURLWithPath:DocPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", NSUUID.UUID.UUIDString, self.fileextension]];
+    os_log_info(bhtiktok_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
@@ -1703,10 +1763,15 @@ static BOOL isAuthenticationShowed = FALSE;
         [BHIManager showSaveVC:@[newFilePath]];
     }
     else {
-        [BHIManager saveMedia:newFilePath fileExtension:self.fileextension];
+        os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
+        [BHIManager saveMedia:newFilePath];
     }
+
+    UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+    [generator impactOccurred];
 }
 %new - (void)downloadDidFailureWithError:(NSError *)error {
+    objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if (error) {
         [self.hud dismiss];
     }
@@ -1719,39 +1784,56 @@ static BOOL isAuthenticationShowed = FALSE;
 
 %hook AWEURLModel
 %new - (NSString *)bestURLtoDownloadFormat {
-    NSURL *bestURLFormat;
+    NSString *bestURLFormat = nil;
     for (NSString *url in self.originURLList) {
         if ([url containsString:@"video_mp4"]) {
             bestURLFormat = @"mp4";
+            break;
         } else if ([url containsString:@".jpeg"]) {
             bestURLFormat = @"jpeg";
+            break;
         } else if ([url containsString:@".png"]) {
             bestURLFormat = @"png";
+            break;
         } else if ([url containsString:@".mp3"]) {
             bestURLFormat = @"mp3";
+            break;
         } else if ([url containsString:@".m4a"]) {
             bestURLFormat = @"m4a";
+            break;
         }
     }
-    if (bestURLFormat == nil) {
-        bestURLFormat = @"m4a";
+    if (bestURLFormat == nil && self.originURLList.count > 0) {
+        // A simple fallback, may not be accurate
+        bestURLFormat = @"mp4";
     }
 
     return bestURLFormat;
 }
-%new - (NSURL *)bestURLtoDownload {
-    NSURL *bestURL;
+%new - (NSURL *)bestImageURLtoDownload {
+    os_log_info(bhtiktok_log, "Searching for best image URL in list: %{public}@", self.originURLList);
     for (NSString *url in self.originURLList) {
-        if ([url containsString:@"video_mp4"] || [url containsString:@".jpeg"] || [url containsString:@".mp3"]) {
-            bestURL = [NSURL URLWithString:url];
+        NSString *lowerUrl = [url lowercaseString];
+        if ([lowerUrl containsString:@".jpeg"] || [lowerUrl containsString:@".png"] || [lowerUrl containsString:@".heic"]) {
+            os_log_info(bhtiktok_log, "Found image URL: %{public}@", url);
+            return [NSURL URLWithString:url];
+        }
+    }
+    os_log_error(bhtiktok_log, "No valid image URL was found in the list.");
+    return nil; // No more fallback
+}
+%new - (NSURL *)bestURLtoDownload {
+    for (NSString *url in self.originURLList) {
+        if ([url containsString:@"video_mp4"]) {
+            return [NSURL URLWithString:url];
         }
     }
 
-    if (bestURL == nil) {
-        bestURL = [NSURL URLWithString:[self.originURLList firstObject]];
+    if (self.originURLList.count > 0) {
+        return [NSURL URLWithString:[self.originURLList firstObject]];
     }
 
-    return bestURL;
+    return nil;
 }
 %end
 
@@ -1879,6 +1961,8 @@ static BOOL isAuthenticationShowed = FALSE;
 
 
 %ctor {
+    bhtiktok_log = os_log_create("com.kunihir0.bhtiktok", "Tweak");
+
     jailbreakPaths = @[
         @"/Applications/Cydia.app", @"/Applications/blackra1n.app",
         @"/Applications/FakeCarrier.app", @"/Applications/Icy.app",

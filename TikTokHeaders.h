@@ -81,6 +81,7 @@
 - (NSURL *)recommendUrl;
 - (NSURL *)bestURLtoDownload;
 - (NSString *)bestURLtoDownloadFormat;
+- (NSURL *)bestImageURLtoDownload;
 @end
 
 @interface AWEVideoModel : NSObject

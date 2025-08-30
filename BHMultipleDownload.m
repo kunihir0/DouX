@@ -42,10 +42,14 @@
     NSString *destinationPath = [documentsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@-%@", NSUUID.UUID.UUIDString, downloadTask.response.suggestedFilename]];
     
     NSError *error;
-    [[NSFileManager defaultManager] moveItemAtURL:location toURL:[NSURL fileURLWithPath:destinationPath] error:&error];
+    NSURL *destinationURL = [NSURL fileURLWithPath:destinationPath];
+    [[NSFileManager defaultManager] moveItemAtURL:location toURL:destinationURL error:&error];
     
     if (error == nil) {
-        [_downloadedFilePaths addObject:[NSURL fileURLWithPath:destinationPath]];
+        [_downloadedFilePaths addObject:destinationURL];
+        if ([self.delegate respondsToSelector:@selector(downloader:didFinishDownloadingFile:atIndex:totalFiles:)]) {
+            [self.delegate downloader:self didFinishDownloadingFile:destinationURL atIndex:_completedDownloads totalFiles:_totalDownloads];
+        }
     }
     
     _completedDownloads++;
