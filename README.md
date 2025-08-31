@@ -18,6 +18,15 @@ A powerful iOS tweak that enhances your TikTok experience with additional featur
 - Region Spoofing: Access content from different countries
 - Enhanced Playback: Speed controls and auto-play options
 
+## For Non-Jailbroken Users
+
+1. Install [TrollStore](https://github.com/opa334/TrollStore) on your device.
+2. Install [TrollFools](https://github.com/Lessica/TrollFools) with TrollStore.
+3. Download the latest `.deb` file from our [Releases](../../releases) page.
+4. Open TrollFools then Select TikTok
+5. Inject our .deb packge into tiktok
+6. profit
+
 ## Installation
 
 ### Requirements
