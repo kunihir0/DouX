@@ -3,7 +3,7 @@ name: Automated Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*
 
 jobs:
   # Job to build the tweak for each scheme (rootless, roothide)
@@ -64,7 +64,7 @@ jobs:
           echo "Installing iOS 16.5 SDK..."
           mkdir -p /opt/theos/sdks
           cd /opt/theos/sdks
-          for i in {1..3};
+          for i in {1..3}; do
             curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz && break
             echo "SDK download failed. Retrying in 5 seconds..."
             sleep 5
@@ -89,10 +89,10 @@ jobs:
           mkdir -p build-artifacts
           
           ORIG_CONTROL=$(cat control)
-          BASE_PKG_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
+          BASE_PKG_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '')
 
           # Build release version
-          echo "Building release package for ${{ matrix.scheme }}"...
+          echo "Building release package for ${{ matrix.scheme }}"..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
           
@@ -105,7 +105,7 @@ jobs:
             echo "Release package for ${{ matrix.scheme }} saved."
           fi
           
-          DYLIB_NAME=$(grep -i '^Name:' control | awk '{print $2}' | tr -d '\r').dylib
+          DYLIB_NAME=$(grep -i '^Name:' control | awk '{print $2}' | tr -d '').dylib
           DYLIB_PATH=$(find .theos/obj -name "$DYLIB_NAME" -type f | head -1)
           if [ -f "$DYLIB_PATH" ]; then
             cp "$DYLIB_PATH" "build-artifacts/release-${{ matrix.scheme }}.dylib"
@@ -115,7 +115,7 @@ jobs:
           echo "$ORIG_CONTROL" > control
 
           # Build debug version
-          echo "Building debug package for ${{ matrix.scheme }}"...
+          echo "Building debug package for ${{ matrix.scheme }}"..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}-debug/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
 
@@ -128,7 +128,7 @@ jobs:
             echo "Debug package for ${{ matrix.scheme }} saved."
           fi
           
-          DYLIB_NAME=$(grep -i '^Name:' control | awk '{print $2}' | tr -d '\r').dylib
+          DYLIB_NAME=$(grep -i '^Name:' control | awk '{print $2}' | tr -d '').dylib
           DYLIB_PATH=$(find .theos/obj -name "$DYLIB_NAME" -type f | head -1)
           if [ -f "$DYLIB_PATH" ]; then
             cp "$DYLIB_PATH" "build-artifacts/debug-${{ matrix.scheme }}.dylib"
@@ -177,7 +177,7 @@ jobs:
           
           VERSION=${{ steps.get_version.outputs.VERSION }}
           CLEAN_VERSION=${VERSION#v}
-          PACKAGE_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
+          PACKAGE_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '')
 
           if [[ -z "$PACKAGE_NAME" ]]; then
             echo "Could not determine package name from control file!"
@@ -187,7 +187,7 @@ jobs:
           echo "Package name: $PACKAGE_NAME"
           echo "Clean version: $CLEAN_VERSION"
 
-          find artifacts -type f -name "*.deb" | while read -r file;
+          find artifacts -type f -name "*.deb" | while read -r file; do
             if [[ "$file" == *release-rootless.deb ]]; then
               mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-rootless.deb"
             elif [[ "$file" == *debug-rootless.deb ]]; then
@@ -199,7 +199,7 @@ jobs:
             fi
           done
 
-          find artifacts -type f -name "*.dylib" | while read -r file;
+          find artifacts -type f -name "*.dylib" | while read -r file; do
             if [[ "$file" == *release-rootless.dylib ]]; then
               mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-rootless.dylib"
             elif [[ "$file" == *debug-rootless.dylib ]]; then
@@ -229,7 +229,36 @@ jobs:
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [[ -n "$PREV_TAG" ]]; then
               CHANGELOG="**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$VERSION"
-              CHANGELOG+=
+              CHANGELOG+=$'\n\n'$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD")
+            else
+              CHANGELOG="Initial Release"
+            fi
+          fi
+          
+          echo "$CHANGELOG" > release_notes.md
+          echo "Generated changelog:"
+          cat release_notes.md
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.deb
+            *.dylib
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build summary
+        run: |
+          echo "## ✅ Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Uploaded Assets" >> $GITHUB_STEP_SUMMARY
+          for file in ${{ steps.prepare_assets.outputs.FILES }}; do
+            echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
+          done
 
   # Job to update the external APT repository after the release is created
   update-apt-repo:
@@ -276,7 +305,7 @@ jobs:
           mkdir -p apt-repo/debs
           
           # Parse the JSON array and loop through each object
-          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb;
+          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb; do
             # Extract the name and url from the JSON object
             NAME=$(echo "$deb" | jq -r '.name')
             URL=$(echo "$deb" | jq -r '.url')
@@ -329,35 +358,3 @@ jobs:
         run: |
           echo "## 📦 External APT Repository Updated" >> $GITHUB_STEP_SUMMARY
           echo "The `gh-pages` branch of **kunihir0/WattMaster** has been updated with the latest packages from this release." >> $GITHUB_STEP_SUMMARY
-
-
-$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD")
-            else
-              CHANGELOG="Initial Release"
-            fi
-          fi
-          
-          echo "$CHANGELOG" > release_notes.md
-          echo "Generated changelog:"
-          cat release_notes.md
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            *.deb
-            *.dylib
-          body_path: release_notes.md
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build summary
-        run: |
-          echo "## ✅ Release Created" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "### Uploaded Assets" >> $GITHUB_STEP_SUMMARY
-          for file in ${{ steps.prepare_assets.outputs.FILES }};
-            echo "- `$file`" >> $GITHUB_STEP_SUMMARY
-          done
