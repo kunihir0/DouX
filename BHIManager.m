@@ -1,6 +1,7 @@
 #import "BHIManager.h"
 #import "TikTokHeaders.h"
 #import <os/log.h>
+#import "VaultManager.h"
 
 static os_log_t bhimanager_log;
 
@@ -127,6 +128,10 @@ static os_log_t bhimanager_log;
 + (BOOL)flexEnabled {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"flex_enabled"];
 }
+
++ (BOOL)showVaultButton {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_vault_button"];
+}
 + (void)cleanCache {
     NSArray <NSURL *> *DocumentFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject] includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
     
@@ -187,7 +192,7 @@ static os_log_t bhimanager_log;
         return false;
     }
 }
-+ (void)showSaveVC:(id)item {
++ (void)showSaveVC:(NSArray<NSURL *> *)item {
     UIActivityViewController *acVC = [[UIActivityViewController alloc] initWithActivityItems:item applicationActivities:nil];
     if (is_iPad()) {
         acVC.popoverPresentationController.sourceView = topMostController().view;
@@ -195,30 +200,37 @@ static os_log_t bhimanager_log;
     }
     [topMostController() presentViewController:acVC animated:true completion:nil];
 }
-+ (void)saveMedia:(NSURL *)newFilePath {
-    os_log_info(bhimanager_log, "BHIManager saveMedia called with path: %{public}@", newFilePath.path);
-    NSString *fileextension = newFilePath.pathExtension;
-    NSArray *imageExtensions = @[@"png", @"jpg", @"jpeg", @"gif", @"tiff", @"bmp", @"heif", @"heic", @"svg"];
-    NSArray *videoExtensions = @[@"mp4", @"mov", @"avi", @"mkv", @"wmv", @"flv", @"webm"];
 
-    if ([imageExtensions containsObject:fileextension.lowercaseString]) {
-        UIImage *image = [UIImage imageWithContentsOfFile:newFilePath.path];
-        if (image) {
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
-            os_log_info(bhimanager_log, "Image saved successfully: %{public}@", newFilePath.path);
-        } else {
-            os_log_error(bhimanager_log, "Error creating UIImage from file: %{public}@", newFilePath.path);
-        }
-    } else if ([videoExtensions containsObject:fileextension.lowercaseString]) {
-        if (UIVideoAtPathIsCompatibleWithSavedPhotosAlbum(newFilePath.path)) {
-            UISaveVideoAtPathToSavedPhotosAlbum(newFilePath.path, nil, nil, nil);
-            os_log_info(bhimanager_log, "Video saved successfully: %{public}@", newFilePath.path);
-        } else {
-            os_log_error(bhimanager_log, "Video at path is not compatible with Photos album: %{public}@", newFilePath.path);
-        }
-    } else {
-        os_log_error(bhimanager_log, "Unsupported file type for saving: %{public}@", fileextension);
++ (void)saveMedia:(NSURL *)newFilePath withCreator:(NSString *)creator andType:(VaultMediaItemType)type {
+    os_log_info(bhimanager_log, "BHIManager saveMedia called with path: %{public}@, creator: %{public}@", newFilePath.path, creator);
+
+    NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *vaultDirectory = [documentsDirectory stringByAppendingPathComponent:@"Vault"];
+
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:vaultDirectory]) {
+        [fileManager createDirectoryAtPath:vaultDirectory withIntermediateDirectories:YES attributes:nil error:nil];
     }
+
+    NSString *uniqueFileName = [NSString stringWithFormat:@"%@.%@", [[NSUUID UUID] UUIDString], [newFilePath pathExtension]];
+    NSString *newPath = [vaultDirectory stringByAppendingPathComponent:uniqueFileName];
+    NSURL *newURL = [NSURL fileURLWithPath:newPath];
+
+    [fileManager moveItemAtURL:newFilePath toURL:newURL error:nil];
+
+    VaultMediaItem *item = [[VaultMediaItem alloc] init];
+    item.internalID = [[NSUUID UUID] UUIDString];
+    item.filePath = newPath;
+    item.creatorUsername = creator;
+    item.contentType = type;
+    item.savedDate = [NSDate date];
+    item.isFavorite = NO;
+
+    [[VaultManager sharedManager] addVaultItem:item];
+}
+
++ (void)saveMedia:(NSURL *)newFilePath {
+    os_log_error(bhimanager_log, "Deprecated saveMedia: called. Please update to saveMedia:withCreator:andType:");
 }
 
 + (NSString *)getDownloadingPersent:(float)per {
