@@ -3,7 +3,7 @@ name: Automated Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*
 
 jobs:
   # Job to build the tweak for each scheme (rootless, roothide)
@@ -92,7 +92,7 @@ jobs:
           BASE_PKG_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
 
           # Build release version
-          echo "Building release package for ${{ matrix.scheme }}"..."
+          echo "Building release package for ${{ matrix.scheme }}""..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
           
@@ -107,7 +107,7 @@ jobs:
           echo "$ORIG_CONTROL" > control
 
           # Build debug version
-          echo "Building debug package for ${{ matrix.scheme }}"..."
+          echo "Building debug package for ${{ matrix.scheme }}""..."
           sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}-debug/" control
           echo "Provides: ${BASE_PKG_NAME}" >> control
 
@@ -195,21 +195,19 @@ jobs:
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Generating changelog for version $VERSION"
           
-          CHANGELOG=$(git tag -l --format='%(contents)' "$VERSION")
+          # Fetch release notes from GitHub API
+          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$VERSION")
           
-          if [ -z "$CHANGELOG" ]; then
+          CHANGELOG=$(echo "$RELEASE_DATA" | jq -r .body)
+          
+          # Fallback to git log if release notes are empty or null
+          if [ -z "$CHANGELOG" ] || [ "$CHANGELOG" == "null" ]; then
+            echo "No release notes found via API. Falling back to git log."
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [[ -n "$PREV_TAG" ]]; then
               CHANGELOG="**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$VERSION"
-              CHANGELOG+=$'\n\n'$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD")
-            else
-              CHANGELOG="Initial Release"
-            fi
-          fi
-          
-          echo "$CHANGELOG" > release_notes.md
-          echo "Generated changelog:"
-          cat release_notes.md
+              CHANGELOG+=
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -329,3 +327,4 @@ jobs:
         run: |
           echo "## 📦 External APT Repository Updated" >> $GITHUB_STEP_SUMMARY
           echo "The 	gh-pages	 branch of **kunihir0/WattMaster** has been updated with the latest packages from this release." >> $GITHUB_STEP_SUMMARY
+
