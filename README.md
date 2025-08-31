@@ -1,4 +1,4 @@
-# BHTikTok++
+# DouX
 
 A powerful iOS tweak that enhances your TikTok experience with additional features like ad blocking, video downloads, and UI customization.
 
