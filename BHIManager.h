@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import "VaultMediaItem.h"
 
 @interface BHIManager: NSObject
 + (BOOL)hideAds;
@@ -41,9 +42,11 @@
 + (BOOL)extendedComment;
 + (BOOL)appLock;
 + (BOOL)flexEnabled;
-+ (void)showSaveVC:(id)item;
++ (BOOL)showVaultButton;
++ (void)showSaveVC:(NSArray<NSURL *> *)item;
 + (void)cleanCache;
 + (BOOL)isEmpty:(NSURL *)url;
 + (NSString *)getDownloadingPersent:(float)per;
-+ (void)saveMedia:(NSURL *)newFilePath;
++ (void)saveMedia:(NSURL *)newFilePath withCreator:(NSString *)creator andType:(VaultMediaItemType)type;
++ (void)saveMedia:(NSURL *)newFilePath __attribute__((deprecated("Use saveMedia:withCreator:andType: instead")));
 @end

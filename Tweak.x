@@ -1,8 +1,21 @@
 #import "TikTokHeaders.h"
 #import <os/log.h>
+#import "VaultViewController.h"
+#import "CreatorFilterViewController.h"
+
+@interface AWEFeedViewTemplateCell (BHTikTok)
+- (void)addVaultButton;
+- (void)vaultButtonHandler:(UIButton *)sender;
+@end
+
+@interface AWEAwemeDetailTableViewCell (BHTikTok)
+- (void)addVaultButton;
+- (void)vaultButtonHandler:(UIButton *)sender;
+@end
 
 static os_log_t bhtiktok_log;
 static const void *kFeedbackGeneratorKey = &kFeedbackGeneratorKey;
+static const void *kCurrentModelKey = &kCurrentModelKey;
 
 NSArray *jailbreakPaths;
 
@@ -28,6 +41,7 @@ static void showConfirmation(void (^okHandler)(void)) {
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"copy_profile_information"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"extended_bio"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"extendedComment"];
+        [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"show_vault_button"];
     }
     [BHIManager cleanCache];
     return true;
@@ -1076,8 +1090,8 @@ static BOOL isAuthenticationShowed = FALSE;
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
     }
-    if ([BHIManager hideElementButton]) {
-        [self addHideElementButton];
+    if ([BHIManager showVaultButton]) {
+        [self addVaultButton];
     }
     if ([BHIManager flexEnabled]) {
         [self addFlexButton];
@@ -1091,6 +1105,9 @@ static BOOL isAuthenticationShowed = FALSE;
     }
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
+    }
+    if ([BHIManager showVaultButton]) {
+        [self addVaultButton];
     }
     if ([BHIManager flexEnabled]) {
         [self addFlexButton];
@@ -1241,6 +1258,7 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
     AWEAwemeBaseViewController *rootVC = self.viewController;
+    objc_setAssociatedObject(self, kCurrentModelKey, rootVC.model, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if ([rootVC isKindOfClass:%c(AWEFeedCellViewController)]) {
 
          UIAction *action1 = [UIAction actionWithTitle:@"Download Video"
@@ -1461,6 +1479,32 @@ static BOOL isAuthenticationShowed = FALSE;
     }
 }
 
+%new - (void)addVaultButton {
+    UIButton *vaultButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [vaultButton setTag:1001];
+    [vaultButton setTranslatesAutoresizingMaskIntoConstraints:false];
+    [vaultButton addTarget:self action:@selector(vaultButtonHandler:) forControlEvents:UIControlEventTouchUpInside];
+    [vaultButton setImage:[UIImage systemImageNamed:@"lock.rectangle.stack.fill"] forState:UIControlStateNormal];
+    if (![self viewWithTag:1001]) {
+        [vaultButton setTintColor:[UIColor whiteColor]];
+        [self addSubview:vaultButton];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [vaultButton.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:170],
+            [vaultButton.trailingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.trailingAnchor constant:-10],
+            [vaultButton.widthAnchor constraintEqualToConstant:30],
+            [vaultButton.heightAnchor constraintEqualToConstant:30],
+        ]];
+    }
+}
+
+%new - (void)vaultButtonHandler:(UIButton *)sender {
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
+    [topMostController() presentViewController:navController animated:YES completion:nil];
+}
+
 %new - (void)downloaderProgress:(float)progress {
     self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
 }
@@ -1474,7 +1518,9 @@ static BOOL isAuthenticationShowed = FALSE;
     else {
         os_log_info(bhtiktok_log, "Calling saveMedia for %lu files.", (unsigned long)[downloadedFilePaths count]);
         for (NSURL *url in downloadedFilePaths) {
-            [BHIManager saveMedia:url];
+            AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
+            NSString *creator = model.author.nickname;
+            [BHIManager saveMedia:url withCreator:creator andType:VaultMediaItemTypePhoto];
         }
     }
 }
@@ -1517,7 +1563,15 @@ static BOOL isAuthenticationShowed = FALSE;
     }
     else {
         os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
-        [BHIManager saveMedia:newFilePath];
+        AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
+        NSString *creator = model.author.nickname;
+        VaultMediaItemType type;
+        if ([self.fileextension isEqualToString:@"mp4"]) {
+            type = VaultMediaItemTypeVideo;
+        } else {
+            type = VaultMediaItemTypePhoto;
+        }
+        [BHIManager saveMedia:newFilePath withCreator:creator andType:type];
     }
 
     UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
@@ -1546,6 +1600,9 @@ static BOOL isAuthenticationShowed = FALSE;
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
     }
+    if ([BHIManager showVaultButton]) {
+        [self addVaultButton];
+    }
 }
 - (void)configureWithModel:(id)model {
     %orig;
@@ -1555,6 +1612,9 @@ static BOOL isAuthenticationShowed = FALSE;
     }
     if ([BHIManager hideElementButton]) {
         [self addHideElementButton];
+    }
+    if ([BHIManager showVaultButton]) {
+        [self addVaultButton];
     }
 }
 %new - (void)addDownloadButton {
@@ -1651,6 +1711,7 @@ static BOOL isAuthenticationShowed = FALSE;
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
     AWEAwemeBaseViewController *rootVC = self.viewController;
+    objc_setAssociatedObject(self, kCurrentModelKey, rootVC.model, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if ([rootVC.interactionController isKindOfClass:%c(TTKFeedInteractionLegacyMainContainerElement)]) {
 
      UIAction *action1 = [UIAction actionWithTitle:@"Download Video"
@@ -1698,6 +1759,33 @@ static BOOL isAuthenticationShowed = FALSE;
     sender.showsMenuAsPrimaryAction = YES;
     }
 }
+
+%new - (void)addVaultButton {
+    UIButton *vaultButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [vaultButton setTag:1001];
+    [vaultButton setTranslatesAutoresizingMaskIntoConstraints:false];
+    [vaultButton addTarget:self action:@selector(vaultButtonHandler:) forControlEvents:UIControlEventTouchUpInside];
+    [vaultButton setImage:[UIImage systemImageNamed:@"lock.rectangle.stack.fill"] forState:UIControlStateNormal];
+    if (![self viewWithTag:1001]) {
+        [vaultButton setTintColor:[UIColor whiteColor]];
+        [self addSubview:vaultButton];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [vaultButton.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:170],
+            [vaultButton.trailingAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.trailingAnchor constant:-10],
+            [vaultButton.widthAnchor constraintEqualToConstant:30],
+            [vaultButton.heightAnchor constraintEqualToConstant:30],
+        ]];
+    }
+}
+
+%new - (void)vaultButtonHandler:(UIButton *)sender {
+    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
+    [topMostController() presentViewController:navController animated:YES completion:nil];
+}
+
 %new - (void)addHideElementButton {
     UIButton *hideElementButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [hideElementButton setTag:999];
@@ -1764,7 +1852,15 @@ static BOOL isAuthenticationShowed = FALSE;
     }
     else {
         os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
-        [BHIManager saveMedia:newFilePath];
+        AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
+        NSString *creator = model.author.nickname;
+        VaultMediaItemType type;
+        if ([self.fileextension isEqualToString:@"mp4"]) {
+            type = VaultMediaItemTypeVideo;
+        } else {
+            type = VaultMediaItemTypePhoto;
+        }
+        [BHIManager saveMedia:newFilePath withCreator:creator andType:type];
     }
 
     UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
