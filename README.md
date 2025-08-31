@@ -102,6 +102,20 @@ make package
 make install
 ```
 
+#### 6. Building for different architectures
+
+To build for a specific architecture, you can use the `THEOS_PACKAGE_SCHEME` and `ARCHS` environment variables. For example, to build for rootless, you would use the following command:
+
+```bash
+make package THEOS_PACKAGE_SCHEME=rootless ARCHS=arm64
+```
+
+To build for roothide, you would use the following command:
+
+```bash
+make package THEOS_PACKAGE_SCHEME=roothide ARCHS=arm64e
+```
+
 #### 6. Final Steps
 
 1. **Restart the TikTok application** after installation

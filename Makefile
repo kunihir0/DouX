@@ -1,7 +1,7 @@
 TARGET := iphone:clang:latest:15.4
 INSTALL_TARGET_PROCESSES = TikTok
 THEOS_DEVICE_IP = 192.168.1.119
-ARCHS=arm64e arm64
+
 
 include $(THEOS)/makefiles/common.mk
 
