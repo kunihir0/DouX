@@ -3,7 +3,7 @@
 
 %hook SparkViewController // alwaysOpenSafari
 - (void)viewWillAppear:(BOOL)animated {
-    if (![BHIManager alwaysOpenSafari]) {
+    if (![DouXManager alwaysOpenSafari]) {
         return %orig;
     }
     
@@ -36,9 +36,9 @@
 
 %hook CTCarrier // changes country 
 - (NSString *)mobileCountryCode {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"mcc"];
         }
         return %orig;
@@ -47,9 +47,9 @@
 }
 
 - (void)setIsoCountryCode:(NSString *)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig(selectedRegion[@"code"]);
         }
         return %orig(arg1);
@@ -58,9 +58,9 @@
 }
 
 - (NSString *)isoCountryCode {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -69,9 +69,9 @@
 }
 
 - (NSString *)mobileNetworkCode {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"mnc"];
         }
         return %orig;
@@ -81,9 +81,9 @@
 %end
 %hook TTKStoreRegionService
 - (id)storeRegion {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -91,9 +91,9 @@
     return %orig;
 }
 - (id)getStoreRegion {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -101,9 +101,9 @@
     return %orig;
 }
 - (void)setStoreRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig([selectedRegion[@"code"] lowercaseString]);
         }
         return %orig(arg1);
@@ -113,9 +113,9 @@
 %end
 %hook TIKTOKRegionManager
 + (NSString *)systemRegion {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -123,9 +123,9 @@
     return %orig;
 }
 + (id)region {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -133,9 +133,9 @@
     return %orig;
 }
 + (id)mccmnc {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [NSString stringWithFormat:@"%@%@", selectedRegion[@"mcc"], selectedRegion[@"mnc"]];
         }
         return %orig;
@@ -143,9 +143,9 @@
     return %orig;
 }
 + (id)storeRegion {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -153,9 +153,9 @@
     return %orig;
 }
 + (id)currentRegionV2 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -163,9 +163,9 @@
     return %orig;
 }
 + (id)localRegion {
-        if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+        if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -177,9 +177,9 @@
 
 %hook TTKPassportAppStoreRegionModel
 - (id)storeRegion {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -187,9 +187,9 @@
     return %orig;
 }
 - (void)setStoreRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig([selectedRegion[@"code"] lowercaseString]);
         }
         return %orig(arg1);
@@ -197,9 +197,9 @@
     return %orig(arg1);
 }
 - (void)setLocalizedCountryName:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig(selectedRegion[@"name"]);
         }
         return %orig(arg1);
@@ -207,9 +207,9 @@
     return %orig(arg1);
 }
 - (id)localizedCountryName {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"name"];
         }
         return %orig;
@@ -220,9 +220,9 @@
 
 %hook ATSRegionCacheManager
 - (id)getRegion {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -230,9 +230,9 @@
     return %orig;
 }
 - (id)storeRegionFromCache {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -240,9 +240,9 @@
     return %orig;
 }
 - (id)storeRegionFromTTNetNotification:(id)arg1 {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -250,9 +250,9 @@
     return %orig;
 }
 - (void)setRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig([selectedRegion[@"code"] lowercaseString]);
         }
         return %orig(arg1);
@@ -260,9 +260,9 @@
     return %orig(arg1);
 }
 - (id)region {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return [selectedRegion[@"code"] lowercaseString];
         }
         return %orig;
@@ -273,9 +273,9 @@
 
 %hook TTKStoreRegionModel
 - (id)storeRegion {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -283,9 +283,9 @@
     return %orig;
 }
 - (void)setStoreRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig(selectedRegion[@"code"]);
         }
         return %orig(arg1);
@@ -296,9 +296,9 @@
 
 %hook TTInstallIDManager
 - (id)currentAppRegion {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -306,9 +306,9 @@
     return %orig;
 }
 - (void)setCurrentAppRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig(selectedRegion[@"code"]);
         }
         return %orig(arg1);
@@ -319,9 +319,9 @@
 
 %hook BDInstallGlobalConfig
 - (id)currentAppRegion {
- if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+ if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return selectedRegion[@"code"];
         }
         return %orig;
@@ -329,9 +329,9 @@
     return %orig;
 }
 - (void)setCurrentAppRegion:(id)arg1 {
-    if ([BHIManager regionChangingEnabled]) {
-        if ([BHIManager selectedRegion]) {
-            NSDictionary *selectedRegion = [BHIManager selectedRegion];
+    if ([DouXManager regionChangingEnabled]) {
+        if ([DouXManager selectedRegion]) {
+            NSDictionary *selectedRegion = [DouXManager selectedRegion];
             return %orig(selectedRegion[@"code"]);
         }
         return %orig(arg1);

@@ -5,11 +5,11 @@
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
     %orig;
-    if ([BHIManager flexEnabled]) {
+    if ([DouXManager flexEnabled]) {
         [[%c(FLEXManager) performSelector:@selector(sharedManager)] performSelector:@selector(showExplorer)];
     }
-    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"BHTikTokFirstRun"]) {
-        [[NSUserDefaults standardUserDefaults] setValue:@"BHTikTokFirstRun" forKey:@"BHTikTokFirstRun"];
+    if (![[NSUserDefaults standardUserDefaults] objectForKey:@"DouXFirstRun"]) {
+        [[NSUserDefaults standardUserDefaults] setValue:@"DouXFirstRun" forKey:@"DouXFirstRun"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"hide_ads"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"download_button"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"remove_elements_button"];
@@ -20,7 +20,7 @@
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"extendedComment"];
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"show_vault_button"];
     }
-    [BHIManager cleanCache];
+    [DouXManager cleanCache];
     return true;
 }
 
@@ -28,7 +28,7 @@ static BOOL isAuthenticationShowed = FALSE;
 - (void)applicationDidBecomeActive:(id)arg1 { // old app lock TODO: add face-id
   %orig;
 
-  if ([BHIManager appLock] && !isAuthenticationShowed) {
+  if ([DouXManager appLock] && !isAuthenticationShowed) {
     UIViewController *rootController = [[self window] rootViewController];
     SecurityViewController *securityViewController = [SecurityViewController new];
     securityViewController.modalPresentationStyle = UIModalPresentationOverFullScreen;

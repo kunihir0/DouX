@@ -14,7 +14,7 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor systemBackgroundColor];
     
-    self.title = @"BHTikTok++ Settings";
+    self.title = @"DouX++ Settings";
     self.staticTable = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
     self.staticTable.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.staticTable];
@@ -38,7 +38,7 @@
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 9;
+    return 10;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -61,6 +61,8 @@
             return @"Playback Speed";
         case 8:
             return @"Developer";
+        case 9:
+            return @"Credits";
         default:
             break;
     }
@@ -78,6 +80,7 @@
         case 6: return 2;
         case 7: return 2;
         case 8: return 3;
+        case 9: return 2;
         default: return 0;
     }
 }
@@ -157,7 +160,7 @@
                 UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
                 cell.textLabel.text = @"Actions";
                 NSString *selectedLiveAction = [[NSUserDefaults standardUserDefaults] valueForKey:@"live_action"];
-                NSArray *liveFuncTitles = @[@"Default", @"BHTikTok++ Settings", @"Playback Speed"];
+                NSArray *liveFuncTitles = @[@"Default", @"DouX++ Settings", @"Playback Speed"];
                 if (selectedLiveAction != nil) {
                     cell.detailTextLabel.text = [NSString stringWithFormat:@"%@", [liveFuncTitles objectAtIndex:[selectedLiveAction integerValue]]];
                 }
@@ -181,6 +184,11 @@
         switch (indexPath.row) {
             case 0: return [self createLinkCellWithTitle:@"Kunihir0" Detail:@"Github Page" Image:@"link"];
             case 1: return [self createLinkCellWithTitle:@"FBI" Detail:@"X Page" Image:@"link"];
+        }
+    } else if (indexPath.section == 9) {
+        switch (indexPath.row) {
+            case 0: return [self createLinkCellWithTitle:@"BHTikTok" Detail:@"Original Tweak" Image:@"link"];
+            case 1: return [self createLinkCellWithTitle:@"BHTikTok++" Detail:@"Forked Tweak" Image:@"link"];
         }
     }
     return [UITableViewCell new];
@@ -209,6 +217,12 @@
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/kunihir0"] options:@{} completionHandler:nil];
         } else if (indexPath.row == 1) {
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://x.com/FBI"] options:@{} completionHandler:nil];
+        }
+    } else if (indexPath.section == 9) {
+        if (indexPath.row == 0) {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/BandarHL/BHTikTok"] options:@{} completionHandler:nil];
+        } else if (indexPath.row == 1) {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/raulsaeed/BHTikTokPlusPlus"] options:@{} completionHandler:nil];
         }
     }
 }

@@ -2,7 +2,7 @@
 #import <UIKit/UIKit.h>
 #import "VaultMediaItem.h"
 
-@interface BHIManager: NSObject
+@interface DouXManager: NSObject
 + (BOOL)hideAds;
 + (BOOL)downloadButton;
 + (BOOL)shareSheet;

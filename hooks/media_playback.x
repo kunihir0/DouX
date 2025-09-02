@@ -3,12 +3,12 @@
 
 %hook TTKMediaSpeedControlService
 - (void)setPlaybackRate:(CGFloat)arg1 {
-    NSNumber *speed = [BHIManager selectedSpeed];
-    if (![BHIManager speedEnabled] || [speed isEqualToNumber:@1]) {
+    NSNumber *speed = [DouXManager selectedSpeed];
+    if (![DouXManager speedEnabled] || [speed isEqualToNumber:@1]) {
         return %orig;
     }
-    if ([BHIManager speedEnabled]) {
-        if ([BHIManager selectedSpeed]) {
+    if ([DouXManager speedEnabled]) {
+        if ([DouXManager selectedSpeed]) {
             return %orig([speed floatValue]);
         }
     } else {
@@ -19,7 +19,7 @@
 
 %hook AWEPlayVideoPlayerController // auto play next video and stop looping video
 - (void)playerWillLoopPlaying:(id)arg1 {
-    if ([BHIManager autoPlay]) {
+    if ([DouXManager autoPlay]) {
         if ([self.container.parentViewController isKindOfClass:%c(AWENewFeedTableViewController)]) {
             [((AWENewFeedTableViewController *)self.container.parentViewController) scrollToNextVideo];
             return;
@@ -28,13 +28,13 @@
     %orig;
 }
 - (BOOL)loop {
-    if ([BHIManager stopPlay]) {
+    if ([DouXManager stopPlay]) {
         return 0;
     }
     return %orig; 
 }
 - (void)setLoop:(BOOL)arg1 {
-    if ([BHIManager stopPlay]) {
+    if ([DouXManager stopPlay]) {
         %orig(0);
     }else {
         %orig;

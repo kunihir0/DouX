@@ -1,16 +1,16 @@
 #import <os/log.h>
 
-@interface AWEFeedViewTemplateCell (BHTikTok)
+@interface AWEFeedViewTemplateCell (DouX)
 - (void)addVaultButton;
 - (void)vaultButtonHandler:(UIButton *)sender;
 @end
 
-@interface AWEAwemeDetailTableViewCell (BHTikTok)
+@interface AWEAwemeDetailTableViewCell (DouX)
 - (void)addVaultButton;
 - (void)vaultButtonHandler:(UIButton *)sender;
 @end
 
-extern os_log_t bhtiktok_log;
+extern os_log_t doux_log;
 extern const void *kFeedbackGeneratorKey;
 extern const void *kCurrentModelKey;
 extern NSArray *jailbreakPaths;

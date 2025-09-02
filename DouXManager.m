@@ -1,14 +1,14 @@
-#import "BHIManager.h"
+#import "DouXManager.h"
 #import "TikTokHeaders.h"
 #import <os/log.h>
 #import "VaultManager.h"
 
-static os_log_t bhimanager_log;
+static os_log_t douxmanager_log;
 
-@implementation BHIManager
+@implementation DouXManager
 
 + (void)load {
-    bhimanager_log = os_log_create("com.kunihir0.bhtiktok", "BHIManager");
+    douxmanager_log = os_log_create("com.kunihir0.doux", "DouXManager");
 }
 
 + (BOOL)hideAds {
@@ -178,7 +178,7 @@ static os_log_t bhimanager_log;
             [[NSFileManager defaultManager] removeItemAtURL:file error:nil];
         }
         if ([file hasDirectoryPath]) {
-            if ([BHIManager isEmpty:file]) {
+            if ([DouXManager isEmpty:file]) {
                 [[NSFileManager defaultManager] removeItemAtURL:file error:nil];
             }
         }
@@ -202,7 +202,7 @@ static os_log_t bhimanager_log;
 }
 
 + (void)saveMedia:(NSURL *)newFilePath withCreator:(NSString *)creator andType:(VaultMediaItemType)type {
-    os_log_info(bhimanager_log, "BHIManager saveMedia called with path: %{public}@, creator: %{public}@", newFilePath.path, creator);
+    os_log_info(douxmanager_log, "DouXManager saveMedia called with path: %{public}@, creator: %{public}@", newFilePath.path, creator);
 
     NSString *documentsDirectory = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
     NSString *vaultDirectory = [documentsDirectory stringByAppendingPathComponent:@"Vault"];
@@ -230,7 +230,7 @@ static os_log_t bhimanager_log;
 }
 
 + (void)saveMedia:(NSURL *)newFilePath {
-    os_log_error(bhimanager_log, "Deprecated saveMedia: called. Please update to saveMedia:withCreator:andType:");
+    os_log_error(douxmanager_log, "Deprecated saveMedia: called. Please update to saveMedia:withCreator:andType:");
 }
 
 + (NSString *)getDownloadingPersent:(float)per {

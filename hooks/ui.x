@@ -1,15 +1,15 @@
 #import "TikTokHeaders.h"
 #import "JGProgressHUD/JGProgressHUD.h"
 #import "VaultViewController.h"
-#import "BHDownload.h"
-#import "BHMultipleDownload.h"
+#import "DouXDownload.h"
+#import "DouXMultipleDownload.h"
 #import <os/log.h>
 #import "common.h"
 
 %hook TTKCommentPanelViewController
 - (void)viewDidLoad {
     %orig;
-    if ([BHIManager transparentCommnet]){
+    if ([DouXManager transparentCommnet]){
         UIView *commnetView = [self view];
         [commnetView setAlpha:0.90];
     }
@@ -19,44 +19,44 @@
 %hook AWEAwemeModel // no ads, show porgress bar
 - (id)initWithDictionary:(id)arg1 error:(id *)arg2 {
     id orig = %orig;
-    return [BHIManager hideAds] && self.isAds ? nil : orig;
+    return [DouXManager hideAds] && self.isAds ? nil : orig;
 }
 - (id)init {
     id orig = %orig;
-    return [BHIManager hideAds] && self.isAds ? nil : orig;
+    return [DouXManager hideAds] && self.isAds ? nil : orig;
 }
 
 - (BOOL)progressBarDraggable {
-    return [BHIManager progressBar] || %orig;
+    return [DouXManager progressBar] || %orig;
 }
 - (BOOL)progressBarVisible {
-    return [BHIManager progressBar] || %orig;
+    return [DouXManager progressBar] || %orig;
 }
 - (void)live_callInitWithDictyCategoryMethod:(id)arg1 {
-    if (![BHIManager disableLive]) {
+    if (![DouXManager disableLive]) {
         %orig;
     }
 }
 + (id)liveStreamURLJSONTransformer {
-    if ([BHIManager disableLive]) {
+    if ([DouXManager disableLive]) {
         return nil;
     }
     return %orig;
 }
 + (id)relatedLiveJSONTransformer {
-    if ([BHIManager disableLive]) {
+    if ([DouXManager disableLive]) {
         return nil;
     }
     return %orig;
 }
 + (id)rawModelFromLiveRoomModel:(id)arg1 {
-    if ([BHIManager disableLive]) {
+    if ([DouXManager disableLive]) {
         return nil;
     }
     return %orig;
 }
 + (id)aweLiveRoom_subModelPropertyKey {
-    if ([BHIManager disableLive]) {
+    if ([DouXManager disableLive]) {
         return nil;
     }
     return %orig;
@@ -65,13 +65,13 @@
 
 %hook AWEPlayInteractionWarningElementView
 - (id)warningImage {
-    if ([BHIManager disableWarnings]) {
+    if ([DouXManager disableWarnings]) {
         return nil;
     }
     return %orig;
 }
 - (id)warningLabel {
-    if ([BHIManager disableWarnings]) {
+    if ([DouXManager disableWarnings]) {
         return nil;
     }
     return %orig;
@@ -80,7 +80,7 @@
 
 %hook TUXLabel
 - (void)setText:(NSString*)arg1 {
-    if ([BHIManager showUsername]) {
+    if ([DouXManager showUsername]) {
         if ([[[self superview] superview] isKindOfClass:%c(AWEPlayInteractionAuthorUserNameButton)]){
             AWEFeedCellViewController *rootVC = [[[self superview] superview] yy_viewController];
             AWEAwemeModel *model = rootVC.model;
@@ -99,7 +99,7 @@
 
 %hook AWENewFeedTableViewController
 - (BOOL)disablePullToRefreshGestureRecognizer {
-    if ([BHIManager disablePullToRefresh]){
+    if ([DouXManager disablePullToRefresh]){
         return 1;
     }
     return %orig;
@@ -109,13 +109,13 @@
 
 %hook AWEMaskInfoModel // Disable Unsensitive Content
 - (BOOL)showMask {
-    if ([BHIManager disableUnsensitive]) {
+    if ([DouXManager disableUnsensitive]) {
         return 0;
     }
     return %orig;
 }
 - (void)setShowMask:(BOOL)arg1 {
-    if ([BHIManager disableUnsensitive]) {
+    if ([DouXManager disableUnsensitive]) {
         %orig(0);
     }
     else {
@@ -126,7 +126,7 @@
 
 %hook AWEAwemeACLItem // remove default watermark
 - (void)setWatermarkType:(NSUInteger)arg1 {
-    if ([BHIManager removeWatermark]){
+    if ([DouXManager removeWatermark]){
         %orig(1);
     }
     else { 
@@ -135,7 +135,7 @@
     
 }
 - (NSUInteger)watermarkType {
-    if ([BHIManager removeWatermark]){
+    if ([DouXManager removeWatermark]){
         return 1;
     }
     return %orig;
@@ -144,7 +144,7 @@
 
 %hook UIButton // follow confirmation broken 
 - (void)_onTouchUpInside {
-    if ([BHIManager followConfirmation] && [self.currentTitle isEqualToString:@"Follow"]) {
+    if ([DouXManager followConfirmation] && [self.currentTitle isEqualToString:@"Follow"]) {
         showConfirmation(^(void) { %orig; });
     } else {
         %orig;
@@ -153,7 +153,7 @@
 %end
 %hook AWEPlayInteractionUserAvatarElement
 - (void)onFollowViewClicked:(id)sender {
-    if ([BHIManager followConfirmation]) {
+    if ([DouXManager followConfirmation]) {
         showConfirmation(^(void) { %orig; });
     } else {
         return %orig;
@@ -163,7 +163,7 @@
 
 %hook AWEFeedVideoButton // like feed confirmation
 - (void)_onTouchUpInside {
-    if ([BHIManager likeConfirmation] && [self.imageNameString isEqualToString:@"ic_like_fill_1_new"]) {
+    if ([DouXManager likeConfirmation] && [self.imageNameString isEqualToString:@"ic_like_fill_1_new"]) {
         showConfirmation(^(void) { %orig; });
     } else {
         %orig;
@@ -172,14 +172,14 @@
 %end
 %hook AWECommentPanelCell // like/dislike comment confirmation
 - (void)onLikeAction:(id)arg1 {
-    if ([BHIManager likeCommentConfirmation]) {
+    if ([DouXManager likeCommentConfirmation]) {
         showConfirmation(^(void) { %orig; });
     } else {
         return %orig;
     }
 }
 - (void)onDislikeAction:(id)arg1 {
-    if ([BHIManager dislikeCommentConfirmation]) {
+    if ([DouXManager dislikeCommentConfirmation]) {
         showConfirmation(^(void) { %orig; });
     } else {
         return %orig;
@@ -189,7 +189,7 @@
 
 %hook AWETextInputController
 - (NSUInteger)maxLength {
-    if ([BHIManager extendedComment]) {
+    if ([DouXManager extendedComment]) {
         return 500;
     }
 
@@ -198,7 +198,7 @@
 %end
 %hook AWEPlayVideoPlayerController
 - (void)containerDidFullyDisplayWithReason:(NSInteger)arg1 {
-    if ([[[self container] parentViewController] isKindOfClass:%c(AWENewFeedTableViewController)] && [BHIManager skipRecommendations]) {
+    if ([[[self container] parentViewController] isKindOfClass:%c(AWENewFeedTableViewController)] && [DouXManager skipRecommendations]) {
         AWENewFeedTableViewController *rootVC = [[self container] parentViewController];
         AWEAwemeModel *currentModel = [rootVC currentAweme];
         if ([currentModel isUserRecommendBigCard]) {
@@ -233,7 +233,7 @@
 
 - (void)layoutSubviews {
     %orig;
-    if ([BHIManager uploadRegion]){
+    if ([DouXManager uploadRegion]){
         for (int i = 0; i < [[self subviews] count]; i ++){
             id j = [[self subviews] objectAtIndex:i];
             if ([j isKindOfClass:%c(UIStackView)]){
@@ -261,11 +261,11 @@
 
 %hook AWELiveFeedEntranceView
 - (void)switchStateWithTapped:(BOOL)arg1 {
-    if (![BHIManager liveActionEnabled] || [BHIManager selectedLiveAction] == 0) {
+    if (![DouXManager liveActionEnabled] || [DouXManager selectedLiveAction] == 0) {
         %orig;
-    } else if ([BHIManager liveActionEnabled] && [[BHIManager selectedLiveAction] intValue] == 1) {
-        UINavigationController *BHTikTokSettings = [[UINavigationController alloc] initWithRootViewController:[[ViewController alloc] init]];
-        [topMostController() presentViewController:BHTikTokSettings animated:true completion:nil];
+    } else if ([DouXManager liveActionEnabled] && [[DouXManager selectedLiveAction] intValue] == 1) {
+        UINavigationController *DouXSettings = [[UINavigationController alloc] initWithRootViewController:[[ViewController alloc] init]];
+        [topMostController() presentViewController:DouXSettings animated:true completion:nil];
     } 
     else {
         %orig;
@@ -284,32 +284,32 @@
 - (void)configWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
-    if ([BHIManager downloadButton]){
+    if ([DouXManager downloadButton]){
         [self addDownloadButton];
     }
-    if ([BHIManager hideElementButton]) {
+    if ([DouXManager hideElementButton]) {
         [self addHideElementButton];
     }
-    if ([BHIManager showVaultButton]) {
+    if ([DouXManager showVaultButton]) {
         [self addVaultButton];
     }
-    if ([BHIManager flexEnabled]) {
+    if ([DouXManager flexEnabled]) {
         [self addFlexButton];
     }
 }
 - (void)configureWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
-    if ([BHIManager downloadButton]){
+    if ([DouXManager downloadButton]){
         [self addDownloadButton];
     }
-    if ([BHIManager hideElementButton]) {
+    if ([DouXManager hideElementButton]) {
         [self addHideElementButton];
     }
-    if ([BHIManager showVaultButton]) {
+    if ([DouXManager showVaultButton]) {
         [self addVaultButton];
     }
-    if ([BHIManager flexEnabled]) {
+    if ([DouXManager flexEnabled]) {
         [self addFlexButton];
     }
 }
@@ -340,7 +340,7 @@
         [feedbackGenerator prepare];
         objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -357,7 +357,7 @@
         [feedbackGenerator prepare];
         objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -370,20 +370,20 @@
             NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
             AWEPhotoAlbumPhoto *currentPhoto = [photos objectAtIndex:index];
 
-                os_log_error(bhtiktok_log, "!!!!!! FIRING SINGLE PHOTO DOWNLOAD FOR INDEX %lu !!!!!!", index);
-                os_log_info(bhtiktok_log, "Attempting to get image URL for single download.");
+                os_log_error(doux_log, "!!!!!! FIRING SINGLE PHOTO DOWNLOAD FOR INDEX %lu !!!!!!", index);
+                os_log_info(doux_log, "Attempting to get image URL for single download.");
                 NSURL *downloadableURL = [currentPhoto.originPhotoURL bestImageURLtoDownload];
                 self.fileextension = [currentPhoto.originPhotoURL bestURLtoDownloadFormat];
                 if (downloadableURL) {
-                    os_log_info(bhtiktok_log, "Got image URL: %{public}@", downloadableURL);
-                    BHDownload *dwManager = [[BHDownload alloc] init];
+                    os_log_info(doux_log, "Got image URL: %{public}@", downloadableURL);
+                    DouXDownload *dwManager = [[DouXDownload alloc] init];
                     [dwManager downloadFileWithURL:downloadableURL];
                     [dwManager setDelegate:self];
                     self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
                     self.hud.textLabel.text = @"Downloading";
                      [self.hud showInView:topMostController().view];
                 } else {
-                    os_log_error(bhtiktok_log, "Failed to get image URL for single download. URL is nil.");
+                    os_log_error(doux_log, "Failed to get image URL for single download. URL is nil.");
                 }
             
     }
@@ -395,20 +395,20 @@
             NSArray <AWEPhotoAlbumPhoto *> *photos = rootVC.model.photoAlbum.photos;
             NSMutableArray<NSURL *> *fileURLs = [NSMutableArray array];
 
-            os_log_info(bhtiktok_log, "Starting 'Download All' for photos.");
+            os_log_info(doux_log, "Starting 'Download All' for photos.");
             for (AWEPhotoAlbumPhoto *currentPhoto in photos) {
                 NSURL *downloadableURL = [currentPhoto.originPhotoURL bestImageURLtoDownload];
                 self.fileextension = [currentPhoto.originPhotoURL bestURLtoDownloadFormat];
                 if (downloadableURL) {
-                    os_log_info(bhtiktok_log, "Queued image URL: %{public}@", downloadableURL);
+                    os_log_info(doux_log, "Queued image URL: %{public}@", downloadableURL);
                     [fileURLs addObject:downloadableURL];
                 } else {
-                    os_log_error(bhtiktok_log, "Failed to get an image URL in 'Download All'.");
+                    os_log_error(doux_log, "Failed to get an image URL in 'Download All'.");
                 }
             }
 
-            os_log_info(bhtiktok_log, "Total images to download: %lu", (unsigned long)[fileURLs count]);
-            BHMultipleDownload *dwManager = [[BHMultipleDownload alloc] init];
+            os_log_info(doux_log, "Total images to download: %lu", (unsigned long)[fileURLs count]);
+            DouXMultipleDownload *dwManager = [[DouXMultipleDownload alloc] init];
             [dwManager setDelegate:self];
             [dwManager downloadFiles:fileURLs];
             self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -421,7 +421,7 @@
     NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
     self.fileextension = @"mp3";
     if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -435,7 +435,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"Could Not Copy Music." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"Could Not Copy Music." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC {
@@ -444,7 +444,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC {
@@ -453,7 +453,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = video_description;
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
@@ -706,21 +706,21 @@
 }
 
 %new - (void)downloaderProgress:(float)progress {
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
+    self.hud.detailTextLabel.text = [DouXManager getDownloadingPersent:progress];
 }
 %new - (void)downloaderDidFinishDownloadingAllFiles:(NSMutableArray<NSURL *> *)downloadedFilePaths {
-    os_log_info(bhtiktok_log, "'Download All' completed. Saving %lu files.", (unsigned long)[downloadedFilePaths count]);
-    os_log_info(bhtiktok_log, "downloaderDidFinishDownloadingAllFiles called.");
+    os_log_info(doux_log, "'Download All' completed. Saving %lu files.", (unsigned long)[downloadedFilePaths count]);
+    os_log_info(doux_log, "downloaderDidFinishDownloadingAllFiles called.");
     [self.hud dismiss];
-    if ([BHIManager shareSheet]) {
-        [BHIManager showSaveVC:downloadedFilePaths];
+    if ([DouXManager shareSheet]) {
+        [DouXManager showSaveVC:downloadedFilePaths];
     }
     else {
-        os_log_info(bhtiktok_log, "Calling saveMedia for %lu files.", (unsigned long)[downloadedFilePaths count]);
+        os_log_info(doux_log, "Calling saveMedia for %lu files.", (unsigned long)[downloadedFilePaths count]);
         for (NSURL *url in downloadedFilePaths) {
             AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
             NSString *creator = model.author.nickname;
-            [BHIManager saveMedia:url withCreator:creator andType:VaultMediaItemTypePhoto];
+            [DouXManager saveMedia:url withCreator:creator andType:VaultMediaItemTypePhoto];
         }
     }
 }
@@ -731,7 +731,7 @@
 }
 
 %new - (void)downloader:(id)downloader didFinishDownloadingFile:(NSURL *)filePath atIndex:(NSInteger)index totalFiles:(NSInteger)total {
-    os_log_info(bhtiktok_log, "Photo %ld of %ld finished downloading.", (long)index + 1, (long)total);
+    os_log_info(doux_log, "Photo %ld of %ld finished downloading.", (long)index + 1, (long)total);
     UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
     [generator impactOccurred];
 }
@@ -742,7 +742,7 @@
         [feedbackGenerator selectionChanged];
     }
     self.progressView.progress = progress;
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
+    self.hud.detailTextLabel.text = [DouXManager getDownloadingPersent:progress];
     self.hud.tapOutsideBlock = ^(JGProgressHUD * _Nonnull HUD) {
         self.hud.textLabel.text = @"Backgrounding ✌️";
         [self.hud dismissAfterDelay:0.4];
@@ -750,19 +750,19 @@
 }
 %new - (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName {
     objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    os_log_info(bhtiktok_log, "downloadDidFinish called for single file.");
+    os_log_info(doux_log, "downloadDidFinish called for single file.");
     NSString *DocPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject;
     NSFileManager *manager = [NSFileManager defaultManager];
     NSURL *newFilePath = [[NSURL fileURLWithPath:DocPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", NSUUID.UUID.UUIDString, self.fileextension]];
-    os_log_info(bhtiktok_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
+    os_log_info(doux_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
-    if ([BHIManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
-        [BHIManager showSaveVC:@[newFilePath]];
+    if ([DouXManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
+        [DouXManager showSaveVC:@[newFilePath]];
     }
     else {
-        os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
+        os_log_info(doux_log, "Calling saveMedia for single file.");
         AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
         NSString *creator = model.author.nickname;
         VaultMediaItemType type;
@@ -771,7 +771,7 @@
         } else {
             type = VaultMediaItemTypePhoto;
         }
-        [BHIManager saveMedia:newFilePath withCreator:creator andType:type];
+        [DouXManager saveMedia:newFilePath withCreator:creator andType:type];
     }
 
     UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
@@ -794,26 +794,26 @@
 - (void)configWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
-    if ([BHIManager downloadButton]){
+    if ([DouXManager downloadButton]){
         [self addDownloadButton];
     }
-    if ([BHIManager hideElementButton]) {
+    if ([DouXManager hideElementButton]) {
         [self addHideElementButton];
     }
-    if ([BHIManager showVaultButton]) {
+    if ([DouXManager showVaultButton]) {
         [self addVaultButton];
     }
 }
 - (void)configureWithModel:(id)model {
     %orig;
     self.elementsHidden = false;
-    if ([BHIManager downloadButton]){
+    if ([DouXManager downloadButton]){
         [self addDownloadButton];
     }
-    if ([BHIManager hideElementButton]) {
+    if ([DouXManager hideElementButton]) {
         [self addHideElementButton];
     }
-    if ([BHIManager showVaultButton]) {
+    if ([DouXManager showVaultButton]) {
         [self addVaultButton];
     }
 }
@@ -844,7 +844,7 @@
         [feedbackGenerator prepare];
         objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -861,7 +861,7 @@
         [feedbackGenerator prepare];
         objc_setAssociatedObject(self, kFeedbackGeneratorKey, feedbackGenerator, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -874,7 +874,7 @@
     NSURL *downloadableURL = [((AWEMusicModel *)rootVC.model.music).playURL bestURLtoDownload];
         self.fileextension = @"mp3";
     if (downloadableURL) {
-        BHDownload *dwManager = [[BHDownload alloc] init];
+        DouXDownload *dwManager = [[DouXDownload alloc] init];
         [dwManager downloadFileWithURL:downloadableURL];
         [dwManager setDelegate:self];
         self.hud = [JGProgressHUD progressHUDWithStyle:JGProgressHUDStyleDark];
@@ -888,7 +888,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC {
@@ -897,7 +897,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = [downloadableURL absoluteString];
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC {
@@ -906,7 +906,7 @@
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = video_description;
     } else {
-        [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
+        [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"The video dosen't have music to download." image:nil actionButtonTitle:@"OK" cancelButtonTitle:nil actionBlock:nil cancelBlock:nil];
     }
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
@@ -1035,23 +1035,23 @@
         [self.hud dismissAfterDelay:0.4];
     };
     self.progressView.progress = progress;
-    self.hud.detailTextLabel.text = [BHIManager getDownloadingPersent:progress];
+    self.hud.detailTextLabel.text = [DouXManager getDownloadingPersent:progress];
 }
 %new - (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName {
     objc_setAssociatedObject(self, kFeedbackGeneratorKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    os_log_info(bhtiktok_log, "downloadDidFinish called for single file.");
+    os_log_info(doux_log, "downloadDidFinish called for single file.");
     NSString *DocPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject;
     NSFileManager *manager = [NSFileManager defaultManager];
     NSURL *newFilePath = [[NSURL fileURLWithPath:DocPath] URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%@", NSUUID.UUID.UUIDString, self.fileextension]];
-    os_log_info(bhtiktok_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
+    os_log_info(doux_log, "Moving file from %{public}@ to %{public}@", filePath, newFilePath);
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
-    if ([BHIManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
-        [BHIManager showSaveVC:@[newFilePath]];
+    if ([DouXManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
+        [DouXManager showSaveVC:@[newFilePath]];
     }
     else {
-        os_log_info(bhtiktok_log, "Calling saveMedia for single file.");
+        os_log_info(doux_log, "Calling saveMedia for single file.");
         AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
         NSString *creator = model.author.nickname;
         VaultMediaItemType type;
@@ -1060,7 +1060,7 @@
         } else {
             type = VaultMediaItemTypePhoto;
         }
-        [BHIManager saveMedia:newFilePath withCreator:creator andType:type];
+        [DouXManager saveMedia:newFilePath withCreator:creator andType:type];
     }
 
     UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
@@ -1107,15 +1107,15 @@
     return bestURLFormat;
 }
 %new - (NSURL *)bestImageURLtoDownload {
-    os_log_info(bhtiktok_log, "Searching for best image URL in list: %{public}@", self.originURLList);
+    os_log_info(doux_log, "Searching for best image URL in list: %{public}@", self.originURLList);
     for (NSString *url in self.originURLList) {
         NSString *lowerUrl = [url lowercaseString];
         if ([lowerUrl containsString:@".jpeg"] || [lowerUrl containsString:@".png"] || [lowerUrl containsString:@".heic"]) {
-            os_log_info(bhtiktok_log, "Found image URL: %{public}@", url);
+            os_log_info(doux_log, "Found image URL: %{public}@", url);
             return [NSURL URLWithString:url];
         }
     }
-    os_log_error(bhtiktok_log, "No valid image URL was found in the list.");
+    os_log_error(doux_log, "No valid image URL was found in the list.");
     return nil; // No more fallback
 }
 %new - (NSURL *)bestURLtoDownload {

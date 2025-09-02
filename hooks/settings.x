@@ -4,9 +4,9 @@
 
 %hook TTKSettingsBaseCellPlugin
 - (void)didSelectItemAtIndex:(NSInteger)index {
-    if ([self.itemModel.identifier isEqualToString:@"bhtiktok_settings"]) {
-        UINavigationController *BHTikTokSettings = [[UINavigationController alloc] initWithRootViewController:[[ViewController alloc] init]];
-        [topMostController() presentViewController:BHTikTokSettings animated:true completion:nil];
+    if ([self.itemModel.identifier isEqualToString:@"doux_settings"]) {
+        UINavigationController *DouXSettings = [[UINavigationController alloc] initWithRootViewController:[[ViewController alloc] init]];
+        [topMostController() presentViewController:DouXSettings animated:true completion:nil];
     } else {
         return %orig;
     }
@@ -17,17 +17,17 @@
 - (void)viewDidLoad {
     %orig;
     if ([self.sectionIdentifier isEqualToString:@"account"]) {
-        TTKSettingsBaseCellPlugin *BHTikTokSettingsPluginCell = [[%c(TTKSettingsBaseCellPlugin) alloc] initWithPluginContext:self.context];
+        TTKSettingsBaseCellPlugin *DouXSettingsPluginCell = [[%c(TTKSettingsBaseCellPlugin) alloc] initWithPluginContext:self.context];
 
-        AWESettingItemModel *BHTikTokSettingsItemModel = [[%c(AWESettingItemModel) alloc] initWithIdentifier:@"bhtiktok_settings"];
-        [BHTikTokSettingsItemModel setTitle:@"BHTikTok++ settings"];
-        [BHTikTokSettingsItemModel setDetail:@"BHTikTok++ settings"];
-        [BHTikTokSettingsItemModel setIconImage:[UIImage systemImageNamed:@"gear"]];
-        [BHTikTokSettingsItemModel setType:99];
+        AWESettingItemModel *DouXSettingsItemModel = [[%c(AWESettingItemModel) alloc] initWithIdentifier:@"doux_settings"];
+        [DouXSettingsItemModel setTitle:@"DouX settings"];
+        [DouXSettingsItemModel setDetail:@"DouX settings"];
+        [DouXSettingsItemModel setIconImage:[UIImage systemImageNamed:@"gear"]];
+        [DouXSettingsItemModel setType:99];
 
-        [BHTikTokSettingsPluginCell setItemModel:BHTikTokSettingsItemModel];
+        [DouXSettingsPluginCell setItemModel:DouXSettingsItemModel];
 
-        [self insertModel:BHTikTokSettingsPluginCell atIndex:0 animated:true];
+        [self insertModel:DouXSettingsPluginCell atIndex:0 animated:true];
     }
 }
 %end
