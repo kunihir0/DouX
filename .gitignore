@@ -4,3 +4,5 @@ packages/
 .DS_Store
 .kilocodemodes
 .kilocode.vscode
+scripts/output
+output

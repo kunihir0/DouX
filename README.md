@@ -122,6 +122,29 @@ make package THEOS_PACKAGE_SCHEME=roothide ARCHS=arm64e
 1. **Restart the TikTok application** after installation
 2. **Verify installation** by checking TikTok settings for BHTikTok++ options
 
+### Building the Tweak with Embedded Libraries
+
+By default, this project links against the `JGProgressHUD` library, which is expected to be installed on your device separately. If you prefer to build a version of the tweak with this library embedded directly into the `.deb` package, you can do so by applying a patch before building.
+
+This method is useful for creating a more portable package that doesn't rely on external dependencies.
+
+**Steps:**
+
+1.  **Apply the patch:**
+    ```bash
+    git apply scripts/compile_jgprogresshud.patch
+    ```
+
+2.  **Build the tweak:**
+    ```bash
+    make package
+    ```
+
+3.  **Revert the patch (optional but recommended):**
+    ```bash
+    git apply -R scripts/compile_jgprogresshud.patch
+    ```
+
 ## Configuration
 
 1. Open TikTok → Profile → Settings
@@ -138,6 +161,35 @@ We welcome contributions! Please check our [Contributing Guide](CONTRIBUTING.md)
 - **[API Documentation](docs/core/)** - Technical implementation details
 
 ## License
+
+## Creating a Patched IPA
+
+This project includes a Python script that automates the process of patching a decrypted IPA with this tweak. This is useful for sideloading the application on non-jailbroken devices.
+
+### Prerequisites
+
+*   Python 3
+*   A decrypted IPA file of TikTok.
+
+### Usage
+
+The `ipa_packager.py` script is located in the `scripts/` directory. It can be used in two ways:
+
+**1. Build the tweak locally and patch the IPA:**
+
+This is the recommended method. The script will first compile the tweak and then patch the IPA with the newly created `.deb` file.
+
+```bash
+python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA>
+```
+
+**2. Use a pre-built tweak to patch the IPA:**
+
+If you have a pre-built `.deb` file of the tweak, you can provide a URL to it.
+
+```bash
+python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA> --tweak_url <URL to .deb file>
+```
 
 MIT License - see [LICENSE](LICENSE) for details.
 
