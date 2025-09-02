@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Check if the JGProgressHUD library is installed
+if ! dpkg -s com.kunihir0.jgprogresshud >/dev/null 2>&1;
+then
+    echo "----------------------------------------------------"
+    printf "\e[0;31m==> \e[1;31mError:\e[m %s\n" "JGProgressHUD is not installed."
+    printf "\e[0;36m==> \e[1;36mNotice:\e[m %s\n" "Please install it from our APT repo first."
+    printf "\e[0;36m==> \e[1;36mNotice:\e[m %s\n" "Repo URL: https://kunihir0.github.io/WattMaster/"
+    echo "----------------------------------------------------"
+    exit 1
+fi
+
+exit 0

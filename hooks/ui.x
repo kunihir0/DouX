@@ -1,5 +1,5 @@
 #import "TikTokHeaders.h"
-#import "JGProgressHUD/JGProgressHUD.h"
+#import "JGProgressHUD.h"
 #import "VaultViewController.h"
 #import "DouXDownload.h"
 #import "DouXMultipleDownload.h"
