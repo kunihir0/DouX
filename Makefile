@@ -15,3 +15,6 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 # --- Add this line at the end ---
 include $(THEOS_MAKE_PATH)/aggregate.mk
+
+before-all::
+	@$(MAKE) -C libs/JGProgressHUD THEOS_PACKAGE_SCHEME=$(THEOS_PACKAGE_SCHEME)
