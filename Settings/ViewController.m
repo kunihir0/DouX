@@ -179,9 +179,8 @@
         }
     } else if (indexPath.section == 8) {
         switch (indexPath.row) {
-            case 0: return [self createLinkCellWithTitle:@"Raul Saeed" Detail:@"Github Page" Image:@"link"];
-            case 1: return [self createLinkCellWithTitle:@"Raul Saeed" Detail:@"X Page" Image:@"link"];
-            case 2: return [self createLinkCellWithTitle:@"Buy Me A Coffe" Detail:@"To keep me Motivated and the Tweak Updated." Image:@"mug.fill"];
+            case 0: return [self createLinkCellWithTitle:@"Kunihir0" Detail:@"Github Page" Image:@"link"];
+            case 1: return [self createLinkCellWithTitle:@"FBI" Detail:@"X Page" Image:@"link"];
         }
     }
     return [UITableViewCell new];
@@ -207,11 +206,9 @@
         [self presentViewController:navController animated:YES completion:nil];
     } else if (indexPath.section == 8) {
         if (indexPath.row == 0) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/raulsaeed"] options:@{} completionHandler:nil];
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://github.com/kunihir0"] options:@{} completionHandler:nil];
         } else if (indexPath.row == 1) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://x.com/Ashad__Saeed"] options:@{} completionHandler:nil];
-        } else if (indexPath.row == 2) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://buymeacoffee.com/raulsaeed79"] options:@{} completionHandler:nil];
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://x.com/FBI"] options:@{} completionHandler:nil];
         }
     }
 }
