@@ -5,7 +5,7 @@
 %hook AWEUserWorkCollectionViewCell
 - (void)configWithModel:(id)arg1 isMine:(BOOL)arg2 { // Video like count & upload date lables
     %orig;
-    if ([BHIManager videoLikeCount] || [BHIManager videoUploadDate]) {
+    if ([DouXManager videoLikeCount] || [DouXManager videoUploadDate]) {
         for (int i = 0; i < [[self.contentView subviews] count]; i ++) {
             UIView *j = [[self.contentView subviews] objectAtIndex:i];
             if (j.tag == 1001) {
@@ -57,7 +57,7 @@
                 [j removeFromSuperview];
             }
         }
-        if ([BHIManager videoLikeCount]) {
+        if ([DouXManager videoLikeCount]) {
         [self.contentView addSubview:heartImage];
         [NSLayoutConstraint activateConstraints:@[
                 [heartImage.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:110],
@@ -73,7 +73,7 @@
                 [likeCountLabel.heightAnchor constraintEqualToConstant:16],
             ]];
         }
-        if ([BHIManager videoUploadDate]) {
+        if ([DouXManager videoUploadDate]) {
         [self.contentView addSubview:clockImage];
         [NSLayoutConstraint activateConstraints:@[
                 [clockImage.topAnchor constraintEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:128],
@@ -115,7 +115,7 @@
 %hook TTKProfileRootView
 - (void)layoutSubviews { // Video count
     %orig;
-    if ([BHIManager profileVideoCount]){
+    if ([DouXManager profileVideoCount]){
         TTKProfileOtherViewController *rootVC = [self yy_viewController];
         AWEUserModel *user = [rootVC user];
         NSNumber *userVideoCount = [user visibleVideosCount];
@@ -132,7 +132,7 @@
 %hook BDImageView
 - (void)layoutSubviews { // Profile save
     %orig;
-    if ([BHIManager profileSave]) {
+    if ([DouXManager profileSave]) {
         [self addHandleLongPress];
     }
 }
@@ -150,9 +150,9 @@
 }
 %new - (void)image:(UIImage *)image didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo {
     if (error) {
-        os_log_error(bhtiktok_log, "Error saving profile image: %{public}@", error.localizedDescription);
+        os_log_error(doux_log, "Error saving profile image: %{public}@", error.localizedDescription);
     } else {
-        os_log_info(bhtiktok_log, "Profile image successfully saved to Photos app");
+        os_log_info(doux_log, "Profile image successfully saved to Photos app");
     }
 }
 %end
@@ -160,7 +160,7 @@
 %hook AWEUserNameLabel // fake verification
 - (void)layoutSubviews {
     %orig;
-    if ([self.yy_viewController isKindOfClass:(%c(TTKProfileHomeViewController))] && [BHIManager fakeVerified]) {
+    if ([self.yy_viewController isKindOfClass:(%c(TTKProfileHomeViewController))] && [DouXManager fakeVerified]) {
         [self addVerifiedIcon:true];
     }
 }
@@ -169,7 +169,7 @@
 %hook TTTAttributedLabel // copy profile decription
 - (void)layoutSubviews {
     %orig;
-    if ([BHIManager profileCopy]){
+    if ([DouXManager profileCopy]){
         [self addHandleLongPress];
     }
 }
@@ -194,7 +194,7 @@
 %hook TTKProfileBaseComponentModel // Fake Followers, Fake Following and FakeVerified.
 
 - (NSDictionary *)bizData {
-	if ([BHIManager fakeChangesEnabled]) {
+	if ([DouXManager fakeChangesEnabled]) {
 		NSDictionary *originalData = %orig;
 		NSMutableDictionary *modifiedData = [originalData mutableCopy];
 		
@@ -213,7 +213,7 @@
 }
 
 - (NSArray *)components {
-	if ([BHIManager fakeVerified]) {
+	if ([DouXManager fakeVerified]) {
 		NSArray *originalComponents = %orig;
 		if ([self.componentID isEqualToString:@"user_account_base_info"] && originalComponents.count == 1) {
 			NSMutableArray *modifiedComponents = [originalComponents mutableCopy];
@@ -256,7 +256,7 @@
 
 %hook AWEUserModel // follower, following Count fake  
 - (NSNumber *)followerCount {
-    if ([BHIManager fakeChangesEnabled]) {
+    if ([DouXManager fakeChangesEnabled]) {
         NSString *fakeCountString = [[NSUserDefaults standardUserDefaults] stringForKey:@"follower_count"];
         if (!(fakeCountString.length == 0)) {
             NSInteger fakeCount = [fakeCountString integerValue];
@@ -269,7 +269,7 @@
     return %orig;
 }
 - (NSNumber *)followingCount {
-    if ([BHIManager fakeChangesEnabled]) {
+    if ([DouXManager fakeChangesEnabled]) {
         NSString *fakeCountString = [[NSUserDefaults standardUserDefaults] stringForKey:@"following_count"];
         if (!(fakeCountString.length == 0)) {
             NSInteger fakeCount = [fakeCountString integerValue];
@@ -285,7 +285,7 @@
 
 %hook AWEProfileEditTextViewController
 - (NSInteger)maxTextLength {
-    if ([BHIManager extendedBio]) {
+    if ([DouXManager extendedBio]) {
         return 222;
     }
 
@@ -296,7 +296,7 @@
 %hook TIKTOKProfileHeaderView // copy profile information
 - (id)initWithFrame:(CGRect)arg1 {
     self = %orig;
-    if ([BHIManager profileCopy]) {
+    if ([DouXManager profileCopy]) {
         [self addHandleLongPress];
     }
     return self;

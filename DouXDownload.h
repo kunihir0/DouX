@@ -1,5 +1,5 @@
 //
-//  BHDownload.h
+//  DouXDownload.h
 //  DIYTableView
 //
 //  Created by BandarHelal on 12/01/1442 AH.
@@ -11,14 +11,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol BHDownloadDelegate <NSObject>
+@protocol DouXDownloadDelegate <NSObject>
 @optional
 - (void)downloadProgress:(float)progress;
 - (void)downloadDidFinish:(NSURL *)filePath Filename:(NSString *)fileName;
 - (void)downloadDidFailureWithError:(NSError *)error;
 @end
 
-@interface BHDownload : NSObject
+@interface DouXDownload : NSObject
 {
    id delegate;
 }
@@ -28,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSString *fileName;
 @end
 
-@interface BHDownload () <NSURLSessionDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate, NSURLSessionStreamDelegate>
+@interface DouXDownload () <NSURLSessionDelegate, NSURLSessionDataDelegate, NSURLSessionDownloadDelegate, NSURLSessionStreamDelegate>
 @property (nonatomic, strong) NSURLSession *Session;
 @end
 

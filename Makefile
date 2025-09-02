@@ -4,10 +4,10 @@ THEOS_DEVICE_IP = 192.168.1.119
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = BHTikTok
+TWEAK_NAME = DouX
 
-BHTikTok_FILES = Tweak.x $(wildcard hooks/*.x) BHDownload.m BHIManager.m BHMultipleDownload.m SecurityViewController.m VaultMediaItem.m VaultManager.m VaultViewController.m PhotoViewController.m CreatorFilterViewController.m ContentTypeFilterViewController.m FilterViewController.m $(wildcard JGProgressHUD/*.m Settings/*.m)
-BHTikTok_FRAMEWORKS = UIKit Foundation CoreGraphics Photos CoreServices SystemConfiguration SafariServices Security QuartzCore Photos
-BHTikTok_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-unused-value -Wno-deprecated-declarations -Wno-nullability-completeness -Wno-unused-function -Wno-incompatible-pointer-types -I./JGProgressHUD
+DouX_FILES = Tweak.x $(wildcard hooks/*.x) DouXDownload.m DouXManager.m DouXMultipleDownload.m SecurityViewController.m VaultMediaItem.m VaultManager.m VaultViewController.m PhotoViewController.m CreatorFilterViewController.m ContentTypeFilterViewController.m FilterViewController.m $(wildcard JGProgressHUD/*.m Settings/*.m)
+DouX_FRAMEWORKS = UIKit Foundation CoreGraphics Photos CoreServices SystemConfiguration SafariServices Security QuartzCore Photos
+DouX_CFLAGS = -fobjc-arc -Wno-unused-variable -Wno-unused-value -Wno-deprecated-declarations -Wno-nullability-completeness -Wno-unused-function -Wno-incompatible-pointer-types -I./JGProgressHUD
 
 include $(THEOS_MAKE_PATH)/tweak.mk

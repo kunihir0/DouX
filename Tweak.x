@@ -3,19 +3,19 @@
 #import "CreatorFilterViewController.h"
 #import "hooks/common.h"
 
-os_log_t bhtiktok_log;
+os_log_t doux_log;
 const void *kFeedbackGeneratorKey = &kFeedbackGeneratorKey;
 const void *kCurrentModelKey = &kCurrentModelKey;
 NSArray *jailbreakPaths;
 
 void showConfirmation(void (^okHandler)(void)) {
-  [%c(AWEUIAlertView) showAlertWithTitle:@"BHTikTok, Hi" description:@"Are you sure?" image:nil actionButtonTitle:@"Yes" cancelButtonTitle:@"No" actionBlock:^{
+  [%c(AWEUIAlertView) showAlertWithTitle:@"DouX, Hi" description:@"Are you sure?" image:nil actionButtonTitle:@"Yes" cancelButtonTitle:@"No" actionBlock:^{
     okHandler();
   } cancelBlock:nil];
 }
 
 %ctor {
-    bhtiktok_log = os_log_create("com.kunihir0.bhtiktok", "Tweak");
+    doux_log = os_log_create("com.kunihir0.doux", "Tweak");
 
     jailbreakPaths = @[
         @"/Applications/Cydia.app", @"/Applications/blackra1n.app",

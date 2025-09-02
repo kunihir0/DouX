@@ -1,6 +1,6 @@
-#import "BHMultipleDownload.h"
+#import "DouXMultipleDownload.h"
 
-@implementation BHMultipleDownload {
+@implementation DouXMultipleDownload {
     NSMutableArray<NSURL *> *_downloadedFilePaths;
     NSInteger _completedDownloads;
     NSInteger _totalDownloads;
@@ -37,7 +37,7 @@
     }
 }
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
-  didFinishDownloadingToURL:(NSURL *)location {
+  didFinishDownloadingToURL:(NSURL *)location {    
     NSString *documentsPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
     NSString *destinationPath = [documentsPath stringByAppendingPathComponent:[NSString stringWithFormat:@"%@-%@", NSUUID.UUID.UUIDString, downloadTask.response.suggestedFilename]];
     

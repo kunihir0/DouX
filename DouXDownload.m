@@ -1,14 +1,14 @@
 //
-//  BHDownload.m
+//  DouXDownload.m
 //  DIYTableView
 //
 //  Created by BandarHelal on 12/01/1442 AH.
 //  Copyright © 1442 BandarHelal. All rights reserved.
 //
 
-#import "BHDownload.h"
+#import "DouXDownload.h"
 
-@implementation BHDownload
+@implementation DouXDownload
 - (instancetype)init {
     self = [super init];
     if (self) {
