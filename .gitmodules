@@ -1,0 +1,3 @@
+[submodule "libs/JGProgressHUD"]
+	path = libs/JGProgressHUD
+	url = https://github.com/kunihir0/JGProgressHUD.git

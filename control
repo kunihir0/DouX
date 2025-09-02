@@ -1,10 +1,10 @@
 Package: com.kunihir0.doux
 Name: DouX
-Version: 1.5.4
+Version: 1.5.5
 Architecture: iphoneos-arm64
 Description: A collection of enhancements for TikTok.
 Maintainer: kunihir0
 Author: kunihir0
 Section: Tweaks
-Depends: mobilesubstrate
+Depends: mobilesubstrate,com.kunihir0.jgprogresshud (>= 0.0.2)
 Conflicts: com.kunihir0.bhtiktok++,com.raulsaeed.bhtiktok++,com.bandarhl.bhtiktok
