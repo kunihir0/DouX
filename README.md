@@ -31,6 +31,99 @@ A powerful iOS tweak that enhances your TikTok experience with additional featur
 2. Install with your Package Manager like Sileo or what ever your setup is
 3. Restart TikTok
 
+
+
+## Non-Jailbroken Installation
+
+There are two primary methods for installing this tweak on a non-jailbroken device: using TrollStore or sideloading with a tool like AltStore or SideStore.
+
+### Method 1: TrollStore (Recommended)
+
+This method uses [TrollStore](https://github.com/opa334/TrollStore) and a tool called [TrollFools](https://github.com/Lessica/TrollFools) to inject the tweak into the TikTok application. This is the recommended method as it provides a more stable and permanent installation.
+
+**Steps:**
+
+1.  **Build the tweak with embedded libraries:**
+
+    To use the tweak with TrollFools, you must first build a version of the `.deb` package that has the required libraries embedded within it.
+
+    *   **Apply the patch:**
+        ```bash
+        git apply scripts/compile_jgprogresshud.patch
+        ```
+
+    *   **Build the tweak:**
+        ```bash
+        make package
+        ```
+
+    *   **Revert the patch (optional but recommended):**
+        ```bash
+        git apply -R scripts/compile_jgprogresshud.patch
+        ```
+
+2.  **Inject the tweak with TrollFools:**
+
+    Once you have the `.deb` file, you can use TrollFools to inject it into the TikTok IPA.
+
+### Method 2: Sideloading with LiveContainer
+
+This method uses a sideloading tool like [AltStore](https://altstore.io/) or [SideStore](https://sidestore.io/) to install a special container app called [LiveContainer](https://github.com/34306/LiveContainer). You will then use the `ipa_packager.py` script to create a patched IPA that can be run inside LiveContainer.
+
+**Steps:**
+
+1.  **Install LiveContainer:**
+
+    Use AltStore (2.0+) or SideStore (0.6.0+) to install LiveContainer on your device.
+
+2.  **Create a patched IPA:**
+
+    This project includes a Python script that automates the process of patching a decrypted IPA with this tweak.
+
+    *   **Prerequisites:**
+        *   Python 3
+        *   A decrypted IPA file of TikTok.
+
+    *   **Usage:**
+        The `ipa_packager.py` script is located in the `scripts/` directory. It can be used in two ways:
+
+        *   **Build the tweak locally and patch the IPA (recommended):**
+            ```bash
+            python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA>
+            ```
+
+        *   **Use a pre-built tweak to patch the IPA:**
+            ```bash
+            python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA> --tweak_url <URL to .deb file>
+            ```
+
+3.  **Run the patched IPA in LiveContainer:**
+
+    Once you have the patched IPA, you can run it inside the LiveContainer app.
+
+### Building the Tweak with Embedded Libraries
+
+By default, this project links against the `JGProgressHUD` library, which is expected to be installed on your device separately. If you prefer to build a version of the tweak with this library embedded directly into the `.deb` package, you can do so by applying a patch before building.
+
+This method is useful for creating a more portable package that doesn't rely on external dependencies.
+
+**Steps:**
+
+1.  **Apply the patch:**
+    ```bash
+    git apply scripts/compile_jgprogresshud.patch
+    ```
+
+2.  **Build the tweak:**
+    ```bash
+    make package
+    ```
+
+3.  **Revert the patch (optional but recommended):**
+    ```bash
+    git apply -R scripts/compile_jgprogresshud.patch
+    ```
+
 ### Building from Source
 
 For this method, you will need a development environment with Theos set up. Follow these comprehensive setup steps:
@@ -122,29 +215,6 @@ make package THEOS_PACKAGE_SCHEME=roothide ARCHS=arm64e
 1. **Restart the TikTok application** after installation
 2. **Verify installation** by checking TikTok settings for BHTikTok++ options
 
-### Building the Tweak with Embedded Libraries
-
-By default, this project links against the `JGProgressHUD` library, which is expected to be installed on your device separately. If you prefer to build a version of the tweak with this library embedded directly into the `.deb` package, you can do so by applying a patch before building.
-
-This method is useful for creating a more portable package that doesn't rely on external dependencies.
-
-**Steps:**
-
-1.  **Apply the patch:**
-    ```bash
-    git apply scripts/compile_jgprogresshud.patch
-    ```
-
-2.  **Build the tweak:**
-    ```bash
-    make package
-    ```
-
-3.  **Revert the patch (optional but recommended):**
-    ```bash
-    git apply -R scripts/compile_jgprogresshud.patch
-    ```
-
 ## Configuration
 
 1. Open TikTok → Profile → Settings
@@ -161,35 +231,6 @@ We welcome contributions! Please check our [Contributing Guide](CONTRIBUTING.md)
 - **[API Documentation](docs/core/)** - Technical implementation details
 
 ## License
-
-## Creating a Patched IPA
-
-This project includes a Python script that automates the process of patching a decrypted IPA with this tweak. This is useful for sideloading the application on non-jailbroken devices.
-
-### Prerequisites
-
-*   Python 3
-*   A decrypted IPA file of TikTok.
-
-### Usage
-
-The `ipa_packager.py` script is located in the `scripts/` directory. It can be used in two ways:
-
-**1. Build the tweak locally and patch the IPA:**
-
-This is the recommended method. The script will first compile the tweak and then patch the IPA with the newly created `.deb` file.
-
-```bash
-python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA>
-```
-
-**2. Use a pre-built tweak to patch the IPA:**
-
-If you have a pre-built `.deb` file of the tweak, you can provide a URL to it.
-
-```bash
-python3 scripts/ipa_packager.py --ipa <URL or local path to decrypted IPA> --tweak_url <URL to .deb file>
-```
 
 MIT License - see [LICENSE](LICENSE) for details.
 
