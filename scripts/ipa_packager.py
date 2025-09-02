@@ -179,6 +179,10 @@ def main(ipa_input, tweak_url):
         if not tweak_url:
             print("\n--- 🛠️  Building Tweak ---")
             run_command(["git", "apply", str(PATCH_FILE)])
+            debian_layout_path = Path.cwd() / "layout" / "DEBIAN"
+            debian_layout_path_bak = Path.cwd() / "layout" / "DEBIAN.bak"
+            if debian_layout_path.exists():
+                shutil.move(debian_layout_path, debian_layout_path_bak)
             try:
                 run_command(["make", "package"])
                 package_dir = Path.cwd() / "packages"
@@ -186,6 +190,8 @@ def main(ipa_input, tweak_url):
                 latest_file = max(list_of_files, key=os.path.getctime)
                 shutil.copy(latest_file, tweak_deb)
             finally:
+                if debian_layout_path_bak.exists():
+                    shutil.move(debian_layout_path_bak, debian_layout_path)
                 run_command(["git", "apply", "-R", str(PATCH_FILE)])
         else:
             print("\n--- 📥 Downloading Tweak ---")
