@@ -1,292 +1,336 @@
 name: Automated Release
 
 on:
-  release:
-    types: [published]
   push:
     tags:
       - 'v*.*.*'
 
 jobs:
-  build-and-release:
+  # Job to build the tweak for each scheme (rootless, roothide)
+  build:
     runs-on: macos-latest
-    permissions:
-      contents: write
-      packages: write
-      
+    strategy:
+      matrix:
+        # Define the build schemes we want to target
+        scheme: [rootless, roothide]
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: recursive
-        
+
+      - name: Cache Theos and SDKs
+        id: cache-theos
+        uses: actions/cache@v4
+        with:
+          path: /opt/theos
+          key: ${{ runner.os }}-theos-sdk-v1
+
       - name: Get version from tag
         id: get_version
         run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/}
-          else
-            VERSION="dev-$(git rev-parse --short HEAD)"
-          fi
-          echo "Raw version from ref: $VERSION"
+          VERSION=${GITHUB_REF#refs/tags/}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building BHTikTok++ version: $VERSION"
-        
+          echo "Building tweak version: $VERSION"
+          
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.2'
+          xcode-version: '16.2'
           
       - name: Accept Xcode License
         run: sudo xcodebuild -license accept
         
-      - name: Install Theos
+      - name: Install Theos (Roothide)
+        if: steps.cache-theos.outputs.cache-hit != 'true'
         run: |
-          echo "Installing Theos..."
-          # Install Theos to /opt/theos instead of default location
+          echo "Setting up Theos directory..."
           sudo mkdir -p /opt/theos
           sudo chown -R $(whoami) /opt/theos
           
-          # Clone Theos manually for more control
-          git clone --recursive https://github.com/theos/theos.git /opt/theos
-          
+          echo "Installing Theos to /opt/theos..."
+          export THEOS=/opt/theos
           echo "THEOS=/opt/theos" >> $GITHUB_ENV
           
-          # Install required dependencies
+          git clone --recursive https://github.com/roothide/theos.git /opt/theos
+          
           brew install ldid xz
           
       - name: Install iOS SDK
+        if: steps.cache-theos.outputs.cache-hit != 'true'
         run: |
-          echo "Installing iOS SDK..."
+          echo "Installing iOS 16.5 SDK..."
           mkdir -p /opt/theos/sdks
           cd /opt/theos/sdks
-          
-          # Download iOS 16.5 SDK
-          echo "Downloading iOS 16.5 SDK..."
-          curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz
-          
-          # Extract the SDK
-          echo "Extracting iOS SDK..."
+          for i in {1..3};
+            do
+              curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz && break
+              echo "SDK download failed. Retrying in 5 seconds..."
+              sleep 5
+            done
           tar -xf iPhoneOS16.5.sdk.tar.xz
-          
-          # Clean up the archive
           rm iPhoneOS16.5.sdk.tar.xz
-          
-          # Verify SDK installation
           echo "Installed SDKs:"
-          ls -la /opt/theos/sdks/
-          
-      - name: Verify Theos Installation
-        run: |
-          echo "Verifying Theos installation..."
-          echo "THEOS path: $THEOS"
-          echo "Theos directory contents:"
-          ls -la $THEOS/
-          echo "Available iOS SDKs:"
-          ls -la $THEOS/sdks/
-          echo "Makefiles directory:"
-          ls -la $THEOS/makefiles/ | head -10
+          ls -l /opt/theos/sdks/
           
       - name: Update version in control file
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Remove 'v' prefix if present for control file
           CLEAN_VERSION=${VERSION#v}
           echo "Updating control file with version: $CLEAN_VERSION"
           sed -i.bak "s/^Version:.*/Version: $CLEAN_VERSION/" control
           cat control
           
-      - name: Clean and build tweak
+      - name: Clean and build tweak (${{ matrix.scheme }})
         run: |
-          echo "Building BHTikTok++ tweak..."
+          echo "Building tweak for ${{ matrix.scheme }} scheme..."
           export THEOS=/opt/theos
-          
-          # Build release version (optimized, stripped)
-          echo "Building release package..."
-          make clean
-          make package FINALPACKAGE=1
-          
-          # Move release package to safe location
           mkdir -p build-artifacts
-          if ls packages/*.deb 1> /dev/null 2>&1; then
-            # Find and copy the release package
-            RELEASE_PKG=$(find packages -name "*.deb" -type f | head -1)
-            cp "$RELEASE_PKG" build-artifacts/release.deb
-            echo "Release package saved as build-artifacts/release.deb"
-            ls -la "$RELEASE_PKG"
-          fi
+          
+          ORIG_CONTROL=$(cat control)
+          BASE_PKG_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
 
-          # Clear packages directory before debug build
+          # Build release version
+          echo "Building release package for ${{ matrix.scheme }}""..."
+          sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}/" control
+          echo "Provides: ${BASE_PKG_NAME}" >> control
+          
           rm -rf packages
-          mkdir -p packages
-
-          # Build debug version (with debug symbols)
-          echo "Building debug package..."
           make clean
-          make package DEBUG=1
-          
-          # Move debug package to safe location
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }} ARCHS=arm64
           if ls packages/*.deb 1> /dev/null 2>&1; then
-            # Find and copy the debug package
-            DEBUG_PKG=$(find packages -name "*.deb" -type f | head -1)
-            cp "$DEBUG_PKG" build-artifacts/debug.deb
-            echo "Debug package saved as build-artifacts/debug.deb"
-            ls -la "$DEBUG_PKG"
+            RELEASE_PKG=$(find packages -name "*.deb" -type f | head -1)
+            cp "$RELEASE_PKG" "build-artifacts/release-${{ matrix.scheme }}.deb"
+            echo "Release package for ${{ matrix.scheme }} saved."
           fi
-          
-          # Clear packages directory and restore both packages with clear names
+          echo "$ORIG_CONTROL" > control
+
+          # Build debug version
+          echo "Building debug package for ${{ matrix.scheme }}""..."
+          sed -i.bak "s/^Package:.*/Package: ${BASE_PKG_NAME}-${{ matrix.scheme }}-debug/" control
+          echo "Provides: ${BASE_PKG_NAME}" >> control
+
           rm -rf packages
-          mkdir -p packages
-          if [[ -f "build-artifacts/release.deb" ]]; then
-            cp build-artifacts/release.deb packages/release.deb
-            echo "Restored release package to packages/release.deb"
+          make clean
+          make package DEBUG=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }} ARCHS=arm64e
+          if ls packages/*.deb 1> /dev/null 2>&1; then
+            DEBUG_PKG=$(find packages -name "*.deb" -type f | head -1)
+            cp "$DEBUG_PKG" "build-artifacts/debug-${{ matrix.scheme }}.deb"
+            echo "Debug package for ${{ matrix.scheme }} saved."
           fi
-          if [[ -f "build-artifacts/debug.deb" ]]; then
-            cp build-artifacts/debug.deb packages/debug.deb
-            echo "Restored debug package to packages/debug.deb"
-          fi
+          echo "$ORIG_CONTROL" > control
           
-      - name: List build artifacts
+      - name: Upload build artifacts (${{ matrix.scheme }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.scheme }}
+          path: build-artifacts/
+
+  # Job to create a single release after all builds are done
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: get_version
         run: |
-          echo "Build completed. Listing artifacts..."
-          find . -name "*.deb" -type f
-          ls -la packages/ || echo "No packages directory found"
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           
-      - name: Prepare release assets
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          
+      - name: Prepare and rename release assets
         id: prepare_assets
         run: |
+          echo "Preparing release assets..."
+          ls -R artifacts/
+          
           VERSION=${{ steps.get_version.outputs.VERSION }}
-          # Clean version string - remove 'v' prefix and any leading dots
           CLEAN_VERSION=${VERSION#v}
-          CLEAN_VERSION=${CLEAN_VERSION#.}
-          
-          echo "Original version: $VERSION"
-          echo "Cleaned version: $CLEAN_VERSION"
-          
-          # Find the generated .deb files
-          echo "Looking for .deb files..."
-          find packages -name "*.deb" -type f | sort
-          
-          # Check for our specifically named files
-          RELEASE_DEB_FILE=""
-          DEBUG_DEB_FILE=""
-          
-          if [[ -f "packages/release.deb" ]]; then
-            RELEASE_DEB_FILE="packages/release.deb"
-            echo "Found release package: $RELEASE_DEB_FILE"
-          fi
-          
-          if [[ -f "packages/debug.deb" ]]; then
-            DEBUG_DEB_FILE="packages/debug.deb"
-            echo "Found debug package: $DEBUG_DEB_FILE"
-          fi
-          
-          # If we don't have our named files, fall back to discovery
-          if [[ -z "$RELEASE_DEB_FILE" ]]; then
-            DEB_FILES=($(find packages -name "*.deb" -type f | sort))
-            if [[ ${#DEB_FILES[@]} -gt 0 ]]; then
-              RELEASE_DEB_FILE="${DEB_FILES[0]}"
-              echo "Using fallback release package: $RELEASE_DEB_FILE"
-            fi
-          fi
-          
-          if [[ -z "$RELEASE_DEB_FILE" ]]; then
-            echo "ERROR: No .deb files found!"
+          PACKAGE_NAME=$(grep -i '^Package:' control | awk '{print $2}' | tr -d '\r')
+
+          if [[ -z "$PACKAGE_NAME" ]]; then
+            echo "Could not determine package name from control file!"
             exit 1
           fi
+
+          echo "Package name: $PACKAGE_NAME"
+          echo "Clean version: $CLEAN_VERSION"
+
+          find artifacts -type f -name "*.deb" | while read -r file;
+            do
+            if [[ "$file" == *release-rootless.deb ]]; then
+              mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-rootless.deb"
+            elif [[ "$file" == *debug-rootless.deb ]]; then
+              mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-rootless-debug.deb"
+            elif [[ "$file" == *release-roothide.deb ]]; then
+              mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-roothide.deb"
+            elif [[ "$file" == *debug-roothide.deb ]]; then
+              mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-roothide-debug.deb"
+            fi
+          done
+
+          echo "Renamed assets:"
+          ls -l ${GITHUB_WORKSPACE}/*.deb
           
-          # Rename release package
-          if [[ -f "$RELEASE_DEB_FILE" ]]; then
-            RELEASE_DEB_NAME="BHTikTok++-${CLEAN_VERSION}.deb"
-            cp "$RELEASE_DEB_FILE" "$RELEASE_DEB_NAME"
-            echo "RELEASE_DEB_FILE=$RELEASE_DEB_NAME" >> $GITHUB_OUTPUT
-            echo "Found and renamed release .deb file: $RELEASE_DEB_NAME"
-            ls -la "$RELEASE_DEB_NAME"
-          fi
-          
-          # Rename debug package if it exists
-          if [[ -n "$DEBUG_DEB_FILE" && -f "$DEBUG_DEB_FILE" ]]; then
-            DEBUG_DEB_NAME="BHTikTok++-${CLEAN_VERSION}-debug.deb"
-            cp "$DEBUG_DEB_FILE" "$DEBUG_DEB_NAME"
-            echo "DEBUG_DEB_FILE=$DEBUG_DEB_NAME" >> $GITHUB_OUTPUT
-            echo "Found and renamed debug .deb file: $DEBUG_DEB_NAME"
-            ls -la "$DEBUG_DEB_NAME"
-          fi
-          
+          FILES=$(ls ${GITHUB_WORKSPACE}/*.deb | xargs -n 1 basename | tr '\n' ' ')
+          echo "FILES=$FILES" >> $GITHUB_OUTPUT
+
       - name: Generate changelog
         id: changelog
         run: |
           VERSION=${{ steps.get_version.outputs.VERSION }}
           echo "Generating changelog for version $VERSION"
           
-          # Try to get changelog from tag message or recent commits
-          if git tag -l --format='%(contents)' "$VERSION" | head -1 | grep -q .; then
-            CHANGELOG=$(git tag -l --format='%(contents)' "$VERSION")
-          else
-            echo "## Changes in $VERSION" > changelog.md
-            echo "" >> changelog.md
-            
-            # Get commits since last tag
+          # Fetch release notes from GitHub API
+          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$VERSION")
+          
+          CHANGELOG=$(echo "$RELEASE_DATA" | jq -r .body)
+          
+          # Fallback to git log if release notes are empty or null
+          if [ -z "$CHANGELOG" ] || [ "$CHANGELOG" == "null" ]; then
+            echo "No release notes found via API. Falling back to git log."
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [[ -n "$PREV_TAG" ]]; then
-              echo "### Commits since $PREV_TAG:" >> changelog.md
-              git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" >> changelog.md
-            else
-              echo "### Recent commits:" >> changelog.md
-              git log --pretty=format:"- %s (%h)" -10 >> changelog.md
+              CHANGELOG="**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$VERSION"
+              CHANGELOG+=
+
             fi
-            
-            CHANGELOG=$(cat changelog.md)
           fi
-          
-          # Save changelog to file for release notes
           echo "$CHANGELOG" > release_notes.md
-          echo "Generated changelog:"
-          cat release_notes.md
-          
+
       - name: Upload release assets
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
+            *.deb
           body_path: release_notes.md
-          generate_release_notes: true
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: BHTikTok++-${{ steps.get_version.outputs.VERSION }}
-          path: |
-            ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}
-            ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}
-            release_notes.md
-          retention-days: 30
-          
+
       - name: Build summary
         run: |
-          echo "## ✅ BHTikTok++ Release Build Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Release Created" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ steps.get_version.outputs.VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Uploaded Assets" >> $GITHUB_STEP_SUMMARY
+          for file in ${{ steps.prepare_assets.outputs.FILES }}; do
+            echo "- 	$file" >> $GITHUB_STEP_SUMMARY
+          done
+
+  # Job to update the external APT repository after the release is created
+  update-apt-repo:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout External APT Repo (gh-pages)
+        uses: actions/checkout@v4
+        with:
+          repository: 'kunihir0/WattMaster'
+          ref: 'gh-pages'
+          path: 'apt-repo'
+          token: ${{ secrets.GH_PAT }}
+
+      # Step 2: Get the URLs and correct filenames of the .deb files from the release.
+      - name: Get Release Info
+        id: release_info
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Fetching release info for tag: $TAG_NAME"
+          
+          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME")
+            
+          # Get a JSON array of objects, each containing the correct name and the download URL
+          DEB_INFO=$(echo "$RELEASE_DATA" | jq -c '[.assets[] | select(.name | endswith(".deb")) | {name: .name, url: .browser_download_url}]')
+          
+          if [ -z "$DEB_INFO" ] || [ "$DEB_INFO" == "[]" ]; then
+            echo "No .deb files found in the release assets for this tweak."
+            exit 1
           fi
-          echo "**Release Package:** ${{ steps.prepare_assets.outputs.RELEASE_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "**Debug Package:** ${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" >> $GITHUB_STEP_SUMMARY
+
+          # Pass the JSON array to the next step
+          echo "deb_info=$DEB_INFO" >> $GITHUB_OUTPUT
+
+      # Step 3: Download the .deb files using their correct names into the cloned external repo.
+      - name: Download new .deb files into APT repo
+        run: |
+          echo "Downloading new .deb files..."
+          mkdir -p apt-repo/debs
+          
+          # Parse the JSON array and loop through each object
+          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb;
+            do
+            # Extract the name and url from the JSON object
+            NAME=$(echo "$deb" | jq -r '.name')
+            URL=$(echo "$deb" | jq -r '.url')
+            
+            if [ -n "$URL" ]; then
+              echo "Downloading $NAME"
+              # Use the correct NAME for the output file
+              curl -L "$URL" -o "apt-repo/debs/$NAME"
+            fi
+          done
+          
+          echo "New packages added to apt-repo/debs:"
+          ls -l apt-repo/debs
+
+      - name: Update APT Repository Index Files
+        uses: docker://debian:stable-slim
+        with:
+          entrypoint: /bin/bash
+          args: >
+            -c "set -e && 
+            apt-get update && 
+            apt-get install -y dpkg-dev bzip2 apt-utils && 
+            cd /github/workspace/apt-repo && 
+            echo 'Scanning all packages...' &&
+            dpkg-scanpackages --multiversion . > Packages && 
+            bzip2 -k -f Packages && 
+            echo 'Generating Release file...' &&
+            apt-ftparchive release . > Release"
+
+      - name: Commit and Push to External Repo
+        run: |
+          cd apt-repo
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to the repository. Nothing to commit."
+          else
+            git add .
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            git commit -m "feat: Add ${{ github.repository }}@$TAG_NAME to APT repo"
+            
+            echo "Pushing changes to kunihir0/WattMaster gh-pages branch..."
+            git push
+            
+            echo "Successfully updated the external APT repository."
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Release Assets:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release .deb**: Optimized package for production use (stripped symbols)" >> $GITHUB_STEP_SUMMARY
-          if [[ -n "${{ steps.prepare_assets.outputs.DEBUG_DEB_FILE }}" ]]; then
-            echo "- **Debug .deb**: Development package with debug symbols for troubleshooting" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "- **Source Code**: Available as GitHub's automatic zip/tar.gz downloads" >> $GITHUB_STEP_SUMMARY
-          echo "- **Automated Changelog**: Generated from git history and tag annotations" >> $GITHUB_STEP_SUMMARY
+
+      - name: APT Update Summary
+        run: |
+          echo "## 📦 External APT Repository Updated" >> $GITHUB_STEP_SUMMARY
+          echo "The 	gh-pages	 branch of **kunihir0/WattMaster** has been updated with the latest packages from this release." >> $GITHUB_STEP_SUMMARY

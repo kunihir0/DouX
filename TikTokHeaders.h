@@ -1,11 +1,11 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import <SafariServices/SafariServices.h>
-#import "BHIManager.h"
+#import "DouXManager.h"
 #import "SecurityViewController.h"
-#import "BHDownload.h"
-#import "BHMultipleDownload.h"
-#import "JGProgressHUD/JGProgressHUD.h"
+#import "DouXDownload.h"
+#import "DouXMultipleDownload.h"
+#import "JGProgressHUD.h"
 #import <Photos/Photos.h>
 #import "Settings/ViewController.h"
 #import "Settings/PlaybackSpeed.h"
@@ -81,6 +81,7 @@
 - (NSURL *)recommendUrl;
 - (NSURL *)bestURLtoDownload;
 - (NSString *)bestURLtoDownloadFormat;
+- (NSURL *)bestImageURLtoDownload;
 @end
 
 @interface AWEVideoModel : NSObject
@@ -276,7 +277,7 @@
 - (void)downloadPhotos:(TTKPhotoAlbumDetailCellController *)rootVC;
 - (void)tapDownloadVideo;
 @end
-@interface AWEFeedViewTemplateCell () <BHDownloadDelegate, BHMultipleDownloadDelegate>
+@interface AWEFeedViewTemplateCell () <DouXDownloadDelegate, DouXMultipleDownloadDelegate>
 @end
 
 @interface AWEFeedViewCell: AWEFeedViewTemplateCell
@@ -302,7 +303,7 @@
 - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC;
 @end
-@interface AWEAwemeDetailTableViewCell () <BHDownloadDelegate>
+@interface AWEAwemeDetailTableViewCell () <DouXDownloadDelegate>
 @end
 
 @interface TTKStoryDetailTableViewCell: UITableViewCell
@@ -321,7 +322,7 @@
 - (void)copyVideo:(AWEAwemeBaseViewController *)rootVC;
 - (void)copyDecription:(AWEAwemeBaseViewController *)rootVC;
 @end
-@interface TTKStoryDetailTableViewCell () <BHDownloadDelegate>
+@interface TTKStoryDetailTableViewCell () <DouXDownloadDelegate>
 @end
 
 @interface TTKFeedPassthroughStackView: UIStackView
