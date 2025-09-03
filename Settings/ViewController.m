@@ -3,6 +3,7 @@
 #import "LiveActions.h"
 #import "PlaybackSpeed.h"
 #import "VaultViewController.h"
+#import "VaultManager.h"
 
 @interface ViewController ()
 @property (nonatomic, strong) UITableView *staticTable;
@@ -71,11 +72,11 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section) {
-        case 0: return 15;
+        case 0: return 16;
         case 1: return 4;
         case 2: return 4;
         case 3: return 10;
-        case 4: return 2;
+        case 4: return 3;
         case 5: return 2;
         case 6: return 2;
         case 7: return 2;
@@ -103,6 +104,7 @@
             case 12: return [self createSwitchCellWithTitle:@"Disable Live Streaming" Detail:@"Disable live video streaming" Key:@"disable_live"];
             case 13: return [self createSwitchCellWithTitle:@"Skip Recommendations" Detail:@"Skip recommended videos" Key:@"skip_recommnedations"];
             case 14: return [self createSwitchCellWithTitle:@"Upload Region" Detail:@"Show Upload Region Flag Next to Username" Key:@"upload_region"];
+            case 15: return [self createSwitchCellWithTitle:@"Block TikTok Shop" Detail:@"Block videos containing TikTok Shop products" Key:@"block_shop_videos"];
         }
     } else if (indexPath.section == 1) {
         switch (indexPath.row) {
@@ -139,8 +141,10 @@
             cell.imageView.image = [UIImage systemImageNamed:@"folder.fill"];
             cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
             return cell;
-        } else {
+        } else if (indexPath.row == 1) {
             return [self createSwitchCellWithTitle:@"Show Vault Button" Detail:@"Show a button on the feed to open the vault" Key:@"show_vault_button"];
+        } else {
+            return [self createSwitchCellWithTitle:@"Encrypt Vault" Detail:@"Encrypt your media vault with a password" Key:@"vault_encryption_enabled"];
         }
     } else if (indexPath.section == 5) {
         switch (indexPath.row) {
@@ -196,8 +200,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (indexPath.section == 4 && indexPath.row == 0) {
-        UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
-        VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+        VaultViewController *vaultVC = [[VaultViewController alloc] init];
         UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
         [self presentViewController:navController animated:YES completion:nil];
     } else if (indexPath.section == 5 && indexPath.row == 1) {
@@ -291,9 +294,96 @@
 
 - (void)switchToggled:(UISwitch *)sender {
     NSString *key = sender.accessibilityLabel;
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setBool:sender.isOn forKey:key];
-    [defaults synchronize];
+    if ([key isEqualToString:@"vault_encryption_enabled"]) {
+        if (sender.isOn) {
+            [self promptForPasswordAndEnableEncryption:sender];
+        } else {
+            [self promptForPasswordAndDisableEncryption:sender];
+        }
+    } else {
+        NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+        [defaults setBool:sender.isOn forKey:key];
+        [defaults synchronize];
+    }
+}
+
+- (void)promptForPasswordAndEnableEncryption:(UISwitch *)sender {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Enable Encryption" message:@"Please enter a password for your vault." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Password";
+        textField.secureTextEntry = YES;
+        [textField addTarget:self action:@selector(textDidChange:) forControlEvents:UIControlEventEditingChanged];
+    }];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Confirm Password";
+        textField.secureTextEntry = YES;
+        [textField addTarget:self action:@selector(textDidChange:) forControlEvents:UIControlEventEditingChanged];
+    }];
+    
+    UIAlertAction *encryptAction = [UIAlertAction actionWithTitle:@"Encrypt" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *passwordField = alert.textFields.firstObject;
+        [[VaultManager sharedManager] enableEncryptionWithPassword:passwordField.text completion:^(BOOL success) {
+            if (success) {
+                [self.staticTable reloadData];
+            } else {
+                [sender setOn:NO animated:YES];
+            }
+        }];
+    }];
+    encryptAction.enabled = NO;
+    
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        [sender setOn:NO animated:YES];
+    }];
+    
+    [alert addAction:encryptAction];
+    [alert addAction:cancelAction];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)textDidChange:(UITextField *)sender {
+    UIAlertController *alert = (UIAlertController *)self.presentedViewController;
+    if (alert) {
+        if (alert.textFields.count == 2) {
+            UITextField *passwordField = alert.textFields.firstObject;
+            UITextField *confirmPasswordField = alert.textFields.lastObject;
+            UIAlertAction *encryptAction = alert.actions.firstObject;
+            encryptAction.enabled = (passwordField.text.length > 0 && [passwordField.text isEqualToString:confirmPasswordField.text]);
+        } else {
+            UITextField *passwordField = alert.textFields.firstObject;
+            UIAlertAction *okAction = alert.actions.firstObject;
+            okAction.enabled = (passwordField.text.length > 0);
+        }
+    }
+}
+
+- (void)promptForPasswordAndDisableEncryption:(UISwitch *)sender {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Disable Encryption" message:@"Please enter your vault password." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Password";
+        textField.secureTextEntry = YES;
+        [textField addTarget:self action:@selector(textDidChange:) forControlEvents:UIControlEventEditingChanged];
+    }];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *passwordField = alert.textFields.firstObject;
+        [[VaultManager sharedManager] disableEncryptionWithPassword:passwordField.text completion:^(BOOL success) {
+            if (success) {
+                [self.staticTable reloadData];
+            } else {
+                [sender setOn:YES animated:YES];
+            }
+        }];
+    }];
+    okAction.enabled = NO;
+    
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        [sender setOn:YES animated:YES];
+    }];
+    
+    [alert addAction:okAction];
+    [alert addAction:cancelAction];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)textFieldDidEndEditing:(UITextField *)textField {

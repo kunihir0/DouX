@@ -2,7 +2,8 @@
 
 typedef NS_ENUM(NSInteger, VaultMediaItemType) {
     VaultMediaItemTypePhoto,
-    VaultMediaItemTypeVideo
+    VaultMediaItemTypeVideo,
+    VaultMediaItemTypeAudio
 };
 
 @interface VaultMediaItem : NSObject <NSSecureCoding>
