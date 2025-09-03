@@ -132,6 +132,10 @@ static os_log_t douxmanager_log;
 + (BOOL)showVaultButton {
     return [[NSUserDefaults standardUserDefaults] boolForKey:@"show_vault_button"];
 }
+
++ (BOOL)blockShopVideos {
+    return [[NSUserDefaults standardUserDefaults] boolForKey:@"block_shop_videos"];
+}
 + (void)cleanCache {
     NSArray <NSURL *> *DocumentFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:[NSURL fileURLWithPath:NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, true).firstObject] includingPropertiesForKeys:@[] options:NSDirectoryEnumerationSkipsHiddenFiles error:nil];
     

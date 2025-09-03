@@ -1,6 +1,7 @@
 #import "TikTokHeaders.h"
 #import "JGProgressHUD.h"
 #import "VaultViewController.h"
+#import "VaultManager.h"
 #import "DouXDownload.h"
 #import "DouXMultipleDownload.h"
 #import <os/log.h>
@@ -457,6 +458,13 @@
     }
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
+    if ([[VaultManager sharedManager] encryptionEnabled] && ![[VaultManager sharedManager] isUnlocked]) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Vault Locked" message:@"Please open your vault via the quick access button on the feed or in the settings by accessing the media vault" preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [topMostController() presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+
     AWEAwemeBaseViewController *rootVC = self.viewController;
     objc_setAssociatedObject(self, kCurrentModelKey, rootVC.model, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if ([rootVC isKindOfClass:%c(AWEFeedCellViewController)]) {
@@ -699,8 +707,7 @@
 }
 
 %new - (void)vaultButtonHandler:(UIButton *)sender {
-    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
-    VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithStyle:UITableViewStyleGrouped];
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
     [topMostController() presentViewController:navController animated:YES completion:nil];
 }
@@ -719,7 +726,7 @@
         os_log_info(doux_log, "Calling saveMedia for %lu files.", (unsigned long)[downloadedFilePaths count]);
         for (NSURL *url in downloadedFilePaths) {
             AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
-            NSString *creator = model.author.nickname;
+            NSString *creator = model.author.socialName;
             [DouXManager saveMedia:url withCreator:creator andType:VaultMediaItemTypePhoto];
         }
     }
@@ -758,16 +765,18 @@
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
-    if ([DouXManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
+    if ([DouXManager shareSheet]) {
         [DouXManager showSaveVC:@[newFilePath]];
     }
     else {
         os_log_info(doux_log, "Calling saveMedia for single file.");
         AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
-        NSString *creator = model.author.nickname;
+        NSString *creator = model.author.socialName;
         VaultMediaItemType type;
         if ([self.fileextension isEqualToString:@"mp4"]) {
             type = VaultMediaItemTypeVideo;
+        } else if ([audioExtensions containsObject:self.fileextension]) {
+            type = VaultMediaItemTypeAudio;
         } else {
             type = VaultMediaItemTypePhoto;
         }
@@ -910,6 +919,13 @@
     }
 }
 %new - (void) downloadButtonHandler:(UIButton *)sender {
+    if ([[VaultManager sharedManager] encryptionEnabled] && ![[VaultManager sharedManager] isUnlocked]) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Vault Locked" message:@"Please open your vault via the quick access button on the feed or in the settings by accessing the media vault" preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [topMostController() presentViewController:alert animated:YES completion:nil];
+        return;
+    }
+
     AWEAwemeBaseViewController *rootVC = self.viewController;
     objc_setAssociatedObject(self, kCurrentModelKey, rootVC.model, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     if ([rootVC.interactionController isKindOfClass:%c(TTKFeedInteractionLegacyMainContainerElement)]) {
@@ -980,8 +996,7 @@
 }
 
 %new - (void)vaultButtonHandler:(UIButton *)sender {
-    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
-    VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithStyle:UITableViewStyleGrouped];
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
     [topMostController() presentViewController:navController animated:YES completion:nil];
 }
@@ -1047,16 +1062,18 @@
     [manager moveItemAtURL:filePath toURL:newFilePath error:nil];
     [self.hud dismiss];
     NSArray *audioExtensions = @[@"mp3", @"aac", @"wav", @"m4a", @"ogg", @"flac", @"aiff", @"wma"];
-    if ([DouXManager shareSheet] || [audioExtensions containsObject:self.fileextension]) {
+    if ([DouXManager shareSheet]) {
         [DouXManager showSaveVC:@[newFilePath]];
     }
     else {
         os_log_info(doux_log, "Calling saveMedia for single file.");
         AWEAwemeModel *model = objc_getAssociatedObject(self, kCurrentModelKey);
-        NSString *creator = model.author.nickname;
+        NSString *creator = model.author.socialName;
         VaultMediaItemType type;
         if ([self.fileextension isEqualToString:@"mp4"]) {
             type = VaultMediaItemTypeVideo;
+        } else if ([audioExtensions containsObject:self.fileextension]) {
+            type = VaultMediaItemTypeAudio;
         } else {
             type = VaultMediaItemTypePhoto;
         }
@@ -1130,5 +1147,24 @@
     }
 
     return nil;
+}
+%end
+
+%hook AWEFeedViewTemplateCell
+- (void)layoutSubviews {
+    %orig;
+    if ([DouXManager blockShopVideos]) {
+        os_log_info(doux_log, "[DouX] blockShopVideos enabled, checking for ad mask view.");
+        Class adMaskViewClass = NSClassFromString(@"TTKCommerceAdMaskView");
+        if (adMaskViewClass) {
+            for (UIView *subview in self.contentView.subviews) {
+                if ([subview isKindOfClass:adMaskViewClass]) {
+                    os_log_info(doux_log, "[DouX] Found TTKCommerceAdMaskView, hiding video.");
+                    self.hidden = YES;
+                    break;
+                }
+            }
+        }
+    }
 }
 %end

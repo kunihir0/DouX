@@ -1,5 +1,6 @@
 #import "SecurityViewController.h"
 #import "VaultViewController.h"
+#import "VaultManager.h"
 
 @implementation SecurityViewController
 
@@ -27,8 +28,7 @@
 }
 
 - (void)vaultButtonTapped:(id)sender {
-    UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
-    VaultViewController *vaultVC = [[VaultViewController alloc] initWithCollectionViewLayout:layout];
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithStyle:UITableViewStyleGrouped];
     UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
     navController.modalPresentationStyle = UIModalPresentationFullScreen;
     [self presentViewController:navController animated:YES completion:nil];
@@ -57,6 +57,84 @@
     } else {
         // no biometry
     }
+}
+
+- (void)enableEncryption {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Enable Encryption" message:@"Please enter a password for your vault." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Password";
+        textField.secureTextEntry = YES;
+    }];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *passwordField = alert.textFields.firstObject;
+        NSString *password = passwordField.text;
+        
+        if (password.length > 0) {
+            [self confirmPassword:password];
+        } else {
+            // show error
+        }
+    }];
+    
+    [alert addAction:okAction];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)confirmPassword:(NSString *)password {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Confirm Password" message:@"Please enter your password again." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Password";
+        textField.secureTextEntry = YES;
+    }];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *passwordField = alert.textFields.firstObject;
+        NSString *confirmedPassword = passwordField.text;
+        
+        if ([password isEqualToString:confirmedPassword]) {
+            [[VaultManager sharedManager] enableEncryptionWithPassword:password completion:^(BOOL success) {
+                if (success) {
+                    // show success
+                } else {
+                    // show error
+                }
+            }];
+        } else {
+            // show error
+        }
+    }];
+    
+    [alert addAction:okAction];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)disableEncryption {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Disable Encryption" message:@"Please enter your password to disable vault encryption." preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = @"Password";
+        textField.secureTextEntry = YES;
+    }];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *passwordField = alert.textFields.firstObject;
+        NSString *password = passwordField.text;
+        
+        if (password.length > 0) {
+            [[VaultManager sharedManager] disableEncryptionWithPassword:password completion:^(BOOL success) {
+                if (success) {
+                    // show success
+                } else {
+                    // show error
+                }
+            }];
+        } else {
+            // show error
+        }
+    }];
+    
+    [alert addAction:okAction];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 @end

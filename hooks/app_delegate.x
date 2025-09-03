@@ -1,6 +1,7 @@
 #import "TikTokHeaders.h"
 #import "SecurityViewController.h"
 #import "common.h"
+#import "VaultViewController.h"
 
 %hook AppDelegate
 - (_Bool)application:(UIApplication *)application didFinishLaunchingWithOptions:(id)arg2 {
@@ -21,7 +22,15 @@
         [[NSUserDefaults standardUserDefaults] setBool:true forKey:@"show_vault_button"];
     }
     [DouXManager cleanCache];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(presentVault) name:@"presentVault" object:nil];
     return true;
+}
+
+%new
+- (void)presentVault {
+    VaultViewController *vaultVC = [[VaultViewController alloc] initWithStyle:UITableViewStyleGrouped];
+    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:vaultVC];
+    [topMostController() presentViewController:navController animated:YES completion:nil];
 }
 
 static BOOL isAuthenticationShowed = FALSE;

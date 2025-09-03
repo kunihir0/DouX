@@ -7,6 +7,8 @@ A powerful iOS tweak that enhances your TikTok experience with additional featur
 [![Language](https://img.shields.io/badge/language-Objective--C-orange.svg)](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html)
 [![Framework](https://img.shields.io/badge/framework-Theos-red.svg)](https://theos.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/WUyHNFYGSF)
+
 
 ## Key Features
 
