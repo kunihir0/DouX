@@ -3,7 +3,7 @@ name: Automated Release
 on:
   push:
     tags:
-      - 'v*.*.*
+      - 'v*.*.*'
 
 jobs:
   # Job to build the tweak for each scheme (rootless, roothide)
@@ -64,11 +64,12 @@ jobs:
           echo "Installing iOS 16.5 SDK..."
           mkdir -p /opt/theos/sdks
           cd /opt/theos/sdks
-          for i in {1..3}; do
-            curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz && break
-            echo "SDK download failed. Retrying in 5 seconds..."
-            sleep 5
-          done
+          for i in {1..3};
+            do
+              curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/master-146e41f/iPhoneOS16.5.sdk.tar.xz && break
+              echo "SDK download failed. Retrying in 5 seconds..."
+              sleep 5
+            done
           tar -xf iPhoneOS16.5.sdk.tar.xz
           rm iPhoneOS16.5.sdk.tar.xz
           echo "Installed SDKs:"
@@ -98,7 +99,7 @@ jobs:
           
           rm -rf packages
           make clean
-          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }}
+          make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }} ARCHS=arm64
           if ls packages/*.deb 1> /dev/null 2>&1; then
             RELEASE_PKG=$(find packages -name "*.deb" -type f | head -1)
             cp "$RELEASE_PKG" "build-artifacts/release-${{ matrix.scheme }}.deb"
@@ -113,7 +114,7 @@ jobs:
 
           rm -rf packages
           make clean
-          make package DEBUG=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }}
+          make package DEBUG=1 THEOS_PACKAGE_SCHEME=${{ matrix.scheme }} ARCHS=arm64e
           if ls packages/*.deb 1> /dev/null 2>&1; then
             DEBUG_PKG=$(find packages -name "*.deb" -type f | head -1)
             cp "$DEBUG_PKG" "build-artifacts/debug-${{ matrix.scheme }}.deb"
@@ -171,7 +172,8 @@ jobs:
           echo "Package name: $PACKAGE_NAME"
           echo "Clean version: $CLEAN_VERSION"
 
-          find artifacts -type f -name "*.deb" | while read -r file; do
+          find artifacts -type f -name "*.deb" | while read -r file;
+            do
             if [[ "$file" == *release-rootless.deb ]]; then
               mv "$file" "${GITHUB_WORKSPACE}/${PACKAGE_NAME}-${CLEAN_VERSION}-rootless.deb"
             elif [[ "$file" == *debug-rootless.deb ]]; then
@@ -208,6 +210,10 @@ jobs:
             if [[ -n "$PREV_TAG" ]]; then
               CHANGELOG="**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$VERSION"
               CHANGELOG+=
+
+            fi
+          fi
+          echo "$CHANGELOG" > release_notes.md
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
@@ -274,7 +280,8 @@ jobs:
           mkdir -p apt-repo/debs
           
           # Parse the JSON array and loop through each object
-          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb; do
+          echo '${{ steps.release_info.outputs.deb_info }}' | jq -c '.[]' | while read -r deb;
+            do
             # Extract the name and url from the JSON object
             NAME=$(echo "$deb" | jq -r '.name')
             URL=$(echo "$deb" | jq -r '.url')
@@ -327,4 +334,3 @@ jobs:
         run: |
           echo "## 📦 External APT Repository Updated" >> $GITHUB_STEP_SUMMARY
           echo "The 	gh-pages	 branch of **kunihir0/WattMaster** has been updated with the latest packages from this release." >> $GITHUB_STEP_SUMMARY
-
